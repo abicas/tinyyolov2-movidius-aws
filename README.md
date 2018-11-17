@@ -267,7 +267,30 @@ The file `flickr_logos_27_dataset_training_set_annotation.txt`  contains the mai
 
 Darknet uses a different file format for training where each picture `.jpg` has a file with the `.txt` extension containing in each line the ID for the class (integer) plus the object coordinates relative to the file size (top, left, width, height). 
 
-Instead of manually changing the format, you can use the script XPTO
+Instead of manually changing the format, you can use the provided script `convert_Flickr2Yolo.py` to convert the labels into Yolo format: 
+````bash
+cd ~/flickr27/flickr_logos_27_dataset/
+mkdir tmp
+python convert_Flickr2Yolo.py
+flickr_logos_27_dataset_images/144503924.jpg--->tmp/1_Adidas_144503924.jpg(tmp/1_Adidas_144503924.txt)
+flickr_logos_27_dataset_images/2451569770.jpg--->tmp/1_Adidas_2451569770.jpg(tmp/1_Adidas_2451569770.txt)
+flickr_logos_27_dataset_images/390321909.jpg--->tmp/1_Adidas_390321909.jpg(tmp/1_Adidas_390321909.txt)
+flickr_logos_27_dataset_images/4761260517.jpg--->tmp/1_Adidas_4761260517.jpg(tmp/1_Adidas_4761260517.txt)
+.
+.
+.
+flickr_logos_27_dataset_images/217288720.jpg--->tmp/6_Yahoo_217288720.jpg(tmp/6_Yahoo_217288720.txt)
+flickr_logos_27_dataset_images/2472817996.jpg--->tmp/6_Yahoo_2472817996.jpg(tmp/6_Yahoo_2472817996.txt)
+flickr_logos_27_dataset_images/2514220918.jpg--->tmp/6_Yahoo_2514220918.jpg(tmp/6_Yahoo_2514220918.txt)
+flickr_logos_27_dataset_images/386891249.jpg--->tmp/6_Yahoo_386891249.jpg(tmp/6_Yahoo_386891249.txt)
+=========== DONE
+CATEGORIES LIST for LABELS
+['Pepsi', 'Puma', 'Ferrari', 'Sprite', 'Ford', 'HP', 'Fedex', 'Starbucks', 'DHL', 'Google', 'Heineken', 'RedBull', 'Intel', 'Nike', 'Porsche', 'Adidas', 'McDonalds', 'Citroen', 'Texaco', 'Unicef', 'Yahoo', 'BMW', 'Nbc', 'Cocacola', 'Vodafone', 'Apple', 'Mini']
+`````
+The script has created the required files in `tmp/` directory. It also provides a *CATEGORIES LIST for LABELS* that will be required later on for the Inference and a , so take note of these values. 
+
+Next we need to 
+
 
 
 
