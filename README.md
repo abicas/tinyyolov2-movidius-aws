@@ -52,7 +52,22 @@ Accepting the other defaults should be alright for the project.
 Thanks to the AMI, the Instance comes up preinstalled with many Deep Learning tools already set up, as well as some prerequisites like CUDA and Python Libraries, making our life way much easier. 
 
 SSH the newly created instance and activate the *python2* environment with `source activate python2`
-![source activate python2] (images/ami4.png)
+![source activate python2](images/ami4.png)
+
+### Installing Darknet
+
+Let's move to the next step, installing the required software to training the models. You can follow the guide directly from [Darknet website](https://pjreddie.com/darknet/install/) or cut directly to the steps here: 
+````
+git clone https://github.com/pjreddie/darknet.git
+cd darknet
+````
+In order to have CUDA enabled we need to change the ````Makefile```` changing the following parameters from 0 to 1 
+````
+GPU=1
+CUDNN=1
+OPENMP=1
+````
+Then compile it runing ````make````
 
 
 
