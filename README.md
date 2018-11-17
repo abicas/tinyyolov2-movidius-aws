@@ -57,7 +57,7 @@ SSH the newly created instance and activate the *python2* environment with `sour
 ### Installing Darknet
 
 Let's move to the next step, installing the required software to training the models. You can follow the guide directly from [Darknet website](https://pjreddie.com/darknet/install/) or cut directly to the steps here: 
-````
+````bash
 git clone https://github.com/pjreddie/darknet.git
 cd darknet
 ````
@@ -79,7 +79,7 @@ In order to run our test, we need to download a pre-trained weights file. There 
 
 Let's download a pre-trained model of TinyYoloV2 trained on VOC data and run it agains a dog picture
 
-````
+````bash
 wget https://pjreddie.com/media/files/yolov2-tiny-voc.weights
 
 ./darknet detector test cfg/voc.data cfg/yolov2-tiny-voc.cfg yolov2-tiny-voc.weights data/dog.jpg
@@ -108,8 +108,119 @@ dog: 78%
 car: 55%
 car: 51%
 ````
-![dog](https://github.com/pjreddie/darknet/blob/master/data/dog.jpg)
-Neat right ? 0.002 seconds ! But this is running on a big server, with top of the line GPU, running a pretty optimized model... there will be some hard work ahead in order to customize this to our data and run it on less powerfull devices. 
+![dog](https://github.com/pjreddie/darknet/blob/master/data/dog.jpg)   
+Neat right ? It was able to spot the dog if 78% certainty in 0.002 seconds (and the car in the background as well)! But this is running on a big server, with a NVIDIA V100 GPU, running a pretty known and optimized model... there will be some hard work ahead in order to customize this to our data and run it on less powerfull devices. But we will make it ! 
+
+### Installing Darkflow 
+
+Movidius devices can only compile deep learning models in Caffe or Tensorflow. So we need to convert the darknet to Tensorflow so it can be converted later on to Movidius. This convertion to Tensorflow will be done my [Darkflow](https://github.com/thtrieu/darkflow). 
+
+But why don't you do the training already on Tensroflow them? Well, based on my experiences, Movidius supports quite a limited subset of operators of Tensorflow and doing transfer learning on existing models to my classes wasn't generating models capable of being converted. The [release notes from Movidius](https://movidius.github.io/ncsdk/release_notes.html) are always changing, so I would recommend checking back to see if it is supporting your required operators. DArknet on the other hand is a network that can be converted without incurring in these issues through the use of Darkflow. 
+
+Darkflow runs on Python3, so lets switch environments and download the code: 
+`````bash
+cd ~
+source deactivate
+source activate python3
+git clone https://github.com/thtrieu/darkflow.git
+`````
+Now let's move to the pre-requisites and Cython extension install: 
+````bash 
+cd ~/darkflow
+pip install tensorflow
+pip install opencv-python
+pip install -e .
+````
+Lets test darkflow install. 
+First lets use our existing darkflow model and run it thru the pictures on `sample_img` dir, using the pre-trained models we downloaded previously:
+````bash
+## Run the model and generate an output image in ~/darkflow/sample_img/out/
+python3 flow --imgdir sample_img/ --model ../darknet/cfg/yolov2-tiny-voc.cfg --load ../darknet/yolov2-tiny-voc.weights  --labels ../darknet/data/voc.names
+
+## Run the model and generate a JSON with the output results in ~/darkflow/sample_img/out/
+python3 flow --imgdir sample_img/ --model ../darknet/cfg/yolov2-tiny-voc.cfg --load ../darknet/yolov2-tiny-voc.weights  --json --labels ../darknet/data/voc.names
+
+cat sample_img/out/sample_dog.json
+
+[{"label": "car", "confidence": 0.77, "topleft": {"x": 444, "y": 90}, "bottomright": {"x": 685, "y": 186}}, {"label": "dog", "confidence": 0.8, "topleft": {"x": 96, "y": 222}, "bottomright": {"x": 344, "y": 532}}]
+````
+![dogdarflow](images/sample_dog.jpg)
+
+
+
+Now lets test a conversion from Darknet to Tensorflow: 
+````bash
+## Convert the Darknet Tiny-Yolo v2 Model to Tensorflow and save it in built_graph/
+
+python3 flow --savepb --model ../darknet/cfg/yolov2-tiny-voc.cfg --load ../darknet/yolov2-tiny-voc.weights  --labels ../darknet/data/voc.names
+Parsing ../darknet/cfg/yolov2-tiny-voc.cfg
+Loading ../darknet/yolov2-tiny-voc.weights ...
+Successfully identified 63471556 bytes
+Finished in 0.00496363639831543s
+
+Building net ...
+Source | Train? | Layer description                | Output size
+-------+--------+----------------------------------+---------------
+       |        | input                            | (?, 416, 416, 3)
+ Load  |  Yep!  | conv 3x3p1_1  +bnorm  leaky      | (?, 416, 416, 16)
+ Load  |  Yep!  | maxp 2x2p0_2                     | (?, 208, 208, 16)
+ Load  |  Yep!  | conv 3x3p1_1  +bnorm  leaky      | (?, 208, 208, 32)
+ Load  |  Yep!  | maxp 2x2p0_2                     | (?, 104, 104, 32)
+ Load  |  Yep!  | conv 3x3p1_1  +bnorm  leaky      | (?, 104, 104, 64)
+ Load  |  Yep!  | maxp 2x2p0_2                     | (?, 52, 52, 64)
+ Load  |  Yep!  | conv 3x3p1_1  +bnorm  leaky      | (?, 52, 52, 128)
+ Load  |  Yep!  | maxp 2x2p0_2                     | (?, 26, 26, 128)
+ Load  |  Yep!  | conv 3x3p1_1  +bnorm  leaky      | (?, 26, 26, 256)
+ Load  |  Yep!  | maxp 2x2p0_2                     | (?, 13, 13, 256)
+ Load  |  Yep!  | conv 3x3p1_1  +bnorm  leaky      | (?, 13, 13, 512)
+ Load  |  Yep!  | maxp 2x2p0_1                     | (?, 13, 13, 512)
+ Load  |  Yep!  | conv 3x3p1_1  +bnorm  leaky      | (?, 13, 13, 1024)
+ Load  |  Yep!  | conv 3x3p1_1  +bnorm  leaky      | (?, 13, 13, 1024)
+ Load  |  Yep!  | conv 1x1p0_1    linear           | (?, 13, 13, 125)
+-------+--------+----------------------------------+---------------
+Running entirely on CPU
+2018-11-17 20:27:45.415208: I tensorflow/core/platform/cpu_feature_guard.cc:141] Your CPU supports instructions that this TensorFlow binary was not compiled to use: AVX2 FMA
+Finished in 1.7518539428710938s
+
+Rebuild a constant version ...
+Done
+
+ls built_graph/
+yolov2-tiny-voc.meta  yolov2-tiny-voc.pb
+````
+Let's test the newly converted model 
+````bash
+## Run the model and generate an output image in ~/darkflow/sample_img/out/
+python3 flow --pbLoad built_graph/yolov2-tiny-voc.pb --metaLoad built_graph/yolov2-tiny-voc.meta --imgdir sample_img/
+
+
+## Run the model and generate a JSON with the output results in ~/darkflow/sample_img/out/
+python3 flow --pbLoad built_graph/yolov2-tiny-voc.pb --metaLoad built_graph/yolov2-tiny-voc.meta --imgdir sample_img/ --json
+
+Loading from .pb and .meta
+WARNING:tensorflow:From /home/ubuntu/darkflow/darkflow/net/build.py:81: FastGFile.__init__ (from tensorflow.python.platform.gfile) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use tf.gfile.GFile.
+Running entirely on CPU
+2018-11-17 20:32:43.767603: I tensorflow/core/platform/cpu_feature_guard.cc:141] Your CPU supports instructions that this TensorFlow binary was not compiled to use: AVX2 FMA
+Forwarding 8 inputs ...
+Total time = 1.3310556411743164s / 8 inps = 6.010267153777317 ips
+Post processing 8 inputs ...
+Total time = 0.27250194549560547s / 8 inps = 29.357588568588817 ips 
+
+cat sample_img/out/sample_dog.json
+[{"label": "car", "confidence": 0.77, "topleft": {"x": 444, "y": 90}, "bottomright": {"x": 685, "y": 186}}, {"label": "dog", "confidence": 0.8, "topleft": {"x": 96, "y": 222}, "bottomright": {"x": 344, "y": 532}}]
+````
+![dogdarflow](images/sample_dog2.jpg)
+
+Before continuing we need to do a minor change on the source of a file in Darkflow. It was designed for pre-trained weights of Yolo, but once we do a custom training it adds 4 bytes to the begining of its weight file that needs to be padded on the reading. 
+
+Edit the file `~/darkflow/darkflow/utils/loader.py` and change `self.offset = 16` to `self.offset = 20` in `weights_walker.__init__()` (line 121)
+
+
+
+
+
 
 
 
