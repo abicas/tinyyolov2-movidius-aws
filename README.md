@@ -67,9 +67,10 @@ GPU=1
 CUDNN=1
 OPENMP=1
 ````
-Then compile it runing ````make````
+Then compile it runing ````make````.  
+
 If everything goes fine, you have an executable in your working dir. Let's test it ! 
-![test run](images/darknet1.png)
+![test run](images/darknet1.png)  
 The message shows it has compiled correctly. 
 
 
