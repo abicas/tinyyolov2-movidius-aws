@@ -34,7 +34,19 @@ The idea behind this project is to allow for low cost devicdes to perform near r
 
 ## Preparing the Training Environment 
 
-In this section we will install and prepare the EC2 instance to run our training jobs. We will not go thru every step of the instance creation, assuming you already have an AWS account and knows how to deploy and properly configure an instance for SSH access. 
+In this section we will install and prepare the EC2 instance to run our training jobs. We will not go thru every step of the instance creation, assuming you already have an AWS account and knows how to deploy and properly configure an instance for SSH access. The main steps you have to watch for while creating the server are described below: 
+
+We will use the *Deep Learning AMI (Ubuntu) Version 18.0 - ami-0484cefb8f48dafe8* to create our instance:
+[EC2 AMI](images/ami1.png)
+
+In order to choose an instance with GPU support, choose p3.2xlarge as the instance type (as the time of writing this instance will cost you around $3 per active hour plus the storage space):
+[EC2 instance](images/ami2.png)
+
+Also, if you need to access it thru SSH externally you can assign a Public IP to it
+[EC2 Public IP](images/ami3.png)
+
+Accepting the other defaults should be alright for the project. 
+
 
 
 
