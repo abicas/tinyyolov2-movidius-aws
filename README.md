@@ -223,11 +223,11 @@ Edit the file `~/darkflow/darkflow/utils/loader.py` and change `self.offset = 16
 
 For this project we will train the network to recognize Logos of 27 brands
 
-### Downloading and Preparing sample data 
+### Downloading and Preparing training data 
 
 In order to train the network we will use a Dataset gathered from Flickr named [Flickr Logos Dataset](http://image.ntua.gr/iva/datasets/flickr_logos/).  It contains 810 annotated images, corresponding to 27 logo classes/brands (30 images for each class). All images are annotated with bounding boxes of the logo instances in the image.
 
-So, let's move on an gather this data on a separate directory once it will need to be prepared before training: 
+So, let's move on and gather this data on a separate directory once it will need to be prepared before training: 
 ````bash
 source deactivate
 source activte python2
@@ -287,12 +287,58 @@ flickr_logos_27_dataset_images/386891249.jpg--->tmp/6_Yahoo_386891249.jpg(tmp/6_
 CATEGORIES LIST for LABELS
 ['Pepsi', 'Puma', 'Ferrari', 'Sprite', 'Ford', 'HP', 'Fedex', 'Starbucks', 'DHL', 'Google', 'Heineken', 'RedBull', 'Intel', 'Nike', 'Porsche', 'Adidas', 'McDonalds', 'Citroen', 'Texaco', 'Unicef', 'Yahoo', 'BMW', 'Nbc', 'Cocacola', 'Vodafone', 'Apple', 'Mini']
 `````
-The script has created the required files in `tmp/` directory. It also provides a *CATEGORIES LIST for LABELS* that will be required later on for the Inference and a , so take note of these values. 
+The script has created the required files in `tmp/` directory. It also provides a `labels.txt` on the base directory that will be used in training and a *CATEGORIES LIST for LABELS* that will be required later on for the Inference, so take note of these values. 
 
-Next we need to 
+Next we need to copy the files and generate the required structure for training:
+````bash
+cd ~/darknet
+mkdir ~/darknet/data/logos/
+cp ~/flickr27/flickr_logos_27_dataset/tmp/*  ~/darknet/data/logos/
+ls ./data/logos/*jpg | grep -v 6_ > ~/darknet/data/train.txt
+ls ./data/logos/*jpg | grep  6_ > ~/darknet/data/test.txt
+cp ~/flickr27/flickr_logos_27_dataset/logos.txt ~/darknet/data/logos.txt
+cp cfg/voc.data cfg/logos.data
+cp cfg/yolov2-tiny-voc.cfg cfg/yolov2-tiny-logos.cfg
+````
+Edit the file `cfg/logos.data` to: 
+````bash
+classes= 27
+train  = ./data/train.txt
+valid  = ./data/test.txt
+names = ./data/logos.txt
+backup = backup
+````
+Ok ! So now we have the annotations in the correct format, the labels in the right place, a list of images for training (1_*.jpg thru 5_*.jpg), a list of images for validation (6_*.jpg), and a file containing all the paths we need. 
 
+The default `.cfg` file is configured for 20 classes and testing. We need to change it to more classes and training. 
 
+Open the `cfg/yolov2-tiny-logos.cfg`in your edit and change the following lines to:
 
+````bash
+1 [net]
+2 # Testing
+3 #batch=1
+4 #subdivisions=1
+5 # Training
+6 batch=128
+7 subdivisions=8
+ .
+ .
+ .
+114 [convolutional]
+115 size=1
+116 stride=1
+117 pad=1
+118 filters=160
+119 activation=linear
+ . 
+ . 
+ .
+124 classes=27
+125 coords=4
+126 num=5
+````
+We commented lines 3 and 4 and changed lines 6 and 7 to allow training in larger batches suitable for the larger GPU in P3 instances. We also changed classes in line 124 to 27 and filters on line 118. Filters must be changed to the value defined by "(classes + 5) * 5"... in this case (27+5)*5=160. 
 
 
 
