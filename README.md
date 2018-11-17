@@ -51,8 +51,8 @@ Accepting the other defaults should be alright for the project.
 
 Thanks to the AMI, the Instance comes up preinstalled with many Deep Learning tools already set up, as well as some prerequisites like CUDA and Python Libraries, making our life way much easier. 
 
-SSH the newly created instance and activate the *python2* environment with `source activate python2`
 ![source activate python2](images/ami4.png)
+SSH the newly created instance and activate the *python2* environment with `source activate python2`
 
 ### Installing Darknet
 
@@ -72,6 +72,45 @@ Then compile it runing ````make````.
 If everything goes fine, you have an executable in your working dir. Let's test it ! 
 ![test run](images/darknet1.png)  
 The message shows it has compiled correctly. 
+
+### Testing Darknet with Tiny YOLO v2
+
+In order to run our test, we need to download a pre-trained weights file. There are several files available. We will be using Tiny Yolo v2 due to its speed and size, small enough to be converted to Movidius and loaded into a raspberry pi memory later on (although less accurate). 
+
+Let's download a pre-trained model of TinyYoloV2 trained on VOC data and run it agains a dog picture
+
+````
+wget https://pjreddie.com/media/files/yolov2-tiny-voc.weights
+
+./darknet detector test cfg/voc.data cfg/yolov2-tiny-voc.cfg yolov2-tiny-voc.weights data/dog.jpg
+
+layer     filters    size              input                output
+    0 conv     16  3 x 3 / 1   416 x 416 x   3   ->   416 x 416 x  16  0.150 BFLOPs
+    1 max          2 x 2 / 2   416 x 416 x  16   ->   208 x 208 x  16
+    2 conv     32  3 x 3 / 1   208 x 208 x  16   ->   208 x 208 x  32  0.399 BFLOPs
+    3 max          2 x 2 / 2   208 x 208 x  32   ->   104 x 104 x  32
+    4 conv     64  3 x 3 / 1   104 x 104 x  32   ->   104 x 104 x  64  0.399 BFLOPs
+    5 max          2 x 2 / 2   104 x 104 x  64   ->    52 x  52 x  64
+    6 conv    128  3 x 3 / 1    52 x  52 x  64   ->    52 x  52 x 128  0.399 BFLOPs
+    7 max          2 x 2 / 2    52 x  52 x 128   ->    26 x  26 x 128
+    8 conv    256  3 x 3 / 1    26 x  26 x 128   ->    26 x  26 x 256  0.399 BFLOPs
+    9 max          2 x 2 / 2    26 x  26 x 256   ->    13 x  13 x 256
+   10 conv    512  3 x 3 / 1    13 x  13 x 256   ->    13 x  13 x 512  0.399 BFLOPs
+   11 max          2 x 2 / 1    13 x  13 x 512   ->    13 x  13 x 512
+   12 conv   1024  3 x 3 / 1    13 x  13 x 512   ->    13 x  13 x1024  1.595 BFLOPs
+   13 conv   1024  3 x 3 / 1    13 x  13 x1024   ->    13 x  13 x1024  3.190 BFLOPs
+   14 conv    125  1 x 1 / 1    13 x  13 x1024   ->    13 x  13 x 125  0.043 BFLOPs
+   15 detection
+mask_scale: Using default '1.000000'
+Loading weights from yolov2-tiny-voc.weights...Done!
+data/dog.jpg: Predicted in 0.002161 seconds.
+dog: 78%
+car: 55%
+car: 51%
+````
+![dog](https://github.com/pjreddie/darknet/blob/master/data/dog.jpg)
+Neat right ? 0.002 seconds ! But this is running on a big server, with top of the line GPU, running a pretty optimized model... there will be some hard work ahead in order to customize this to our data and run it on less powerfull devices. 
+
 
 
 
