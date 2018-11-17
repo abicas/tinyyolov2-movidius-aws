@@ -32,11 +32,13 @@ The idea behind this project is to allow for low cost devicdes to perform near r
 * USB Webcam 
 * [Movidius USB Stick] (https://www.movidius.com/) for accelerated
 
-## Preparing the Training Environment 
+## Setting things up for Training
+
+### Preparing the Training Instance 
 
 In this section we will install and prepare the EC2 instance to run our training jobs. We will not go thru every step of the instance creation, assuming you already have an AWS account and knows how to deploy and properly configure an instance for SSH access. The main steps you have to watch for while creating the server are described below: 
 
-We will use the *Deep Learning AMI (Ubuntu) Version 18.0 - ami-0484cefb8f48dafe8* to create our instance:
+We will use the *Deep Learning AMI (Ubuntu) Version 18.0 - ami-0484cefb8f48dafe8* to create our instance (there can be a new version of the AMI when you deploy your instance once they get updated quite frequently, but it shouldn't be an issue for the project in case you decide to use a newwer one):
 ![EC2 AMI](images/ami1.png)
 
 In order to choose an instance with GPU support, choose p3.2xlarge as the instance type (as the time of writing this instance will cost you around $3 per active hour plus the storage space):
@@ -47,6 +49,10 @@ Also, if you need to access it thru SSH externally you can assign a Public IP to
 
 Accepting the other defaults should be alright for the project. 
 
+Thanks to the AMI, the Instance comes up preinstalled with many Deep Learning tools already set up, as well as some prerequisites like CUDA and Python Libraries, making our life way much easier. 
+
+SSH the newly created instance and activate the *python2* environment with `source activate python2`
+![source activate python2] (images/ami4.png)
 
 
 
