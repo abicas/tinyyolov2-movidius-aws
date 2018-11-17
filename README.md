@@ -294,8 +294,8 @@ Next we need to copy the files and generate the required structure for training:
 cd ~/darknet
 mkdir ~/darknet/data/logos/
 cp ~/flickr27/flickr_logos_27_dataset/tmp/*  ~/darknet/data/logos/
-ls ./data/logos/*jpg | grep -v 6_ > ~/darknet/data/train.txt
-ls ./data/logos/*jpg | grep  6_ > ~/darknet/data/test.txt
+ls data/logos/*jpg | grep -v 6_ > ~/darknet/data/train.txt
+ls data/logos/*jpg | grep  6_ > ~/darknet/data/test.txt
 cp ~/flickr27/flickr_logos_27_dataset/logos.txt ~/darknet/data/logos.txt
 cp cfg/voc.data cfg/logos.data
 cp cfg/yolov2-tiny-voc.cfg cfg/yolov2-tiny-logos.cfg
@@ -320,7 +320,7 @@ Open the `cfg/yolov2-tiny-logos.cfg`in your edit and change the following lines 
 3 #batch=1
 4 #subdivisions=1
 5 # Training
-6 batch=128
+6 batch=256
 7 subdivisions=8
  .
  .
@@ -335,25 +335,72 @@ Open the `cfg/yolov2-tiny-logos.cfg`in your edit and change the following lines 
  . 
  .
 124 classes=27
-125 coords=4
-126 num=5
 ````
 We commented lines 3 and 4 and changed lines 6 and 7 to allow training in larger batches suitable for the larger GPU in P3 instances. We also changed classes in line 124 to 27 and filters on line 118. Filters must be changed to the value defined by "(classes + 5) * 5"... in this case (27+5)*5=160. 
 
+The final step is to extract from the pre-trained weights file the final layer with the detection, so we can add more classes on custom training, generating `yolov2-tiny-logos.conv.13`: 
+````bash
+./darknet partial cfg/yolov2-tiny-logos.cfg yolov2-tiny-voc.weights yolov2-tiny-logos.conv.13 13
+layer     filters    size              input                output
+    0 conv     16  3 x 3 / 1   416 x 416 x   3   ->   416 x 416 x  16  0.150 BFLOPs
+    1 max          2 x 2 / 2   416 x 416 x  16   ->   208 x 208 x  16
+    2 conv     32  3 x 3 / 1   208 x 208 x  16   ->   208 x 208 x  32  0.399 BFLOPs
+    3 max          2 x 2 / 2   208 x 208 x  32   ->   104 x 104 x  32
+    4 conv     64  3 x 3 / 1   104 x 104 x  32   ->   104 x 104 x  64  0.399 BFLOPs
+    5 max          2 x 2 / 2   104 x 104 x  64   ->    52 x  52 x  64
+    6 conv    128  3 x 3 / 1    52 x  52 x  64   ->    52 x  52 x 128  0.399 BFLOPs
+    7 max          2 x 2 / 2    52 x  52 x 128   ->    26 x  26 x 128
+    8 conv    256  3 x 3 / 1    26 x  26 x 128   ->    26 x  26 x 256  0.399 BFLOPs
+    9 max          2 x 2 / 2    26 x  26 x 256   ->    13 x  13 x 256
+   10 conv    512  3 x 3 / 1    13 x  13 x 256   ->    13 x  13 x 512  0.399 BFLOPs
+   11 max          2 x 2 / 1    13 x  13 x 512   ->    13 x  13 x 512
+   12 conv   1024  3 x 3 / 1    13 x  13 x 512   ->    13 x  13 x1024  1.595 BFLOPs
+   13 conv   1024  3 x 3 / 1    13 x  13 x1024   ->    13 x  13 x1024  3.190 BFLOPs
+   14 conv    125  1 x 1 / 1    13 x  13 x1024   ->    13 x  13 x 125  0.043 BFLOPs
+   15 detection
+mask_scale: Using default '1.000000'
+Loading weights from yolov2-tiny-voc.weights...Done!
+Saving weights to yolov2-tiny-voc.conv.13
+````
 
+### Training with Custom Logos
 
+Ok ! Finally ! Now the real fun begins (and for some anxious people like me the worst part that is watching the training go on for a couple of hours hoping for the algorithms to improve at each interation) ! 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+````bash
+./darknet detector train data/logos.data cfg/yolov2-tiny-logos.cfg yolov2-tiny-logos.conv.13
+yolov2-tiny-logos
+layer     filters    size              input                output
+    0 conv     16  3 x 3 / 1   416 x 416 x   3   ->   416 x 416 x  16  0.150 BFLOPs
+    1 max          2 x 2 / 2   416 x 416 x  16   ->   208 x 208 x  16
+    2 conv     32  3 x 3 / 1   208 x 208 x  16   ->   208 x 208 x  32  0.399 BFLOPs
+    3 max          2 x 2 / 2   208 x 208 x  32   ->   104 x 104 x  32
+    4 conv     64  3 x 3 / 1   104 x 104 x  32   ->   104 x 104 x  64  0.399 BFLOPs
+    5 max          2 x 2 / 2   104 x 104 x  64   ->    52 x  52 x  64
+    6 conv    128  3 x 3 / 1    52 x  52 x  64   ->    52 x  52 x 128  0.399 BFLOPs
+    7 max          2 x 2 / 2    52 x  52 x 128   ->    26 x  26 x 128
+    8 conv    256  3 x 3 / 1    26 x  26 x 128   ->    26 x  26 x 256  0.399 BFLOPs
+    9 max          2 x 2 / 2    26 x  26 x 256   ->    13 x  13 x 256
+   10 conv    512  3 x 3 / 1    13 x  13 x 256   ->    13 x  13 x 512  0.399 BFLOPs
+   11 max          2 x 2 / 1    13 x  13 x 512   ->    13 x  13 x 512
+   12 conv   1024  3 x 3 / 1    13 x  13 x 512   ->    13 x  13 x1024  1.595 BFLOPs
+   13 conv   1024  3 x 3 / 1    13 x  13 x1024   ->    13 x  13 x1024  3.190 BFLOPs
+   14 conv    160  1 x 1 / 1    13 x  13 x1024   ->    13 x  13 x 160  0.055 BFLOPs
+   15 detection
+mask_scale: Using default '1.000000'
+Loading weights from yolov2-tiny-logos.conv.13...Done!
+Learning Rate: 0.001, Momentum: 0.9, Decay: 0.0005
+Resizing
+576
+Loaded: 0.000056 seconds
+Region Avg IOU: 0.222891, Class: 0.053764, Obj: 0.494056, No Obj: 0.524390, Avg Recall: 0.125000,  count: 40
+Region Avg IOU: 0.139555, Class: 0.033544, Obj: 0.453380, No Obj: 0.524479, Avg Recall: 0.023256,  count: 43
+Region Avg IOU: 0.203201, Class: 0.025441, Obj: 0.460821, No Obj: 0.526109, Avg Recall: 0.052632,  count: 57
+Region Avg IOU: 0.197740, Class: 0.040392, Obj: 0.547493, No Obj: 0.524353, Avg Recall: 0.093023,  count: 43
+Region Avg IOU: 0.210658, Class: 0.041557, Obj: 0.405024, No Obj: 0.524432, Avg Recall: 0.055556,  count: 54
+Region Avg IOU: 0.224586, Class: 0.040483, Obj: 0.528059, No Obj: 0.523632, Avg Recall: 0.098039,  count: 51
+Region Avg IOU: 0.191087, Class: 0.046858, Obj: 0.577232, No Obj: 0.523932, Avg Recall: 0.027027,  count: 37
+Region Avg IOU: 0.186272, Class: 0.035375, Obj: 0.465858, No Obj: 0.525054, Avg Recall: 0.066667,  count: 90
+1: 537.416504, 537.416504 avg, 0.001000 rate, 2.609928 seconds, 256 images
+Loaded: 0.000073 seconds
+````
