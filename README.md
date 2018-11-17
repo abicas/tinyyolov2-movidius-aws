@@ -34,7 +34,7 @@ The idea behind this project is to allow for low cost devicdes to perform near r
 
 ## Preparing the Training Environment 
 
-In this section we will install and prepare the EC2 instance to run our training jobs. 
+In this section we will install and prepare the EC2 instance to run our training jobs. We will not go thru every step of the instance creation, assuming you already have an AWS account and knows how to deploy and properly configure an instance for SSH access. 
 
 
 
