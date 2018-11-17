@@ -36,7 +36,9 @@ The idea behind this project is to allow for low cost devicdes to perform near r
 
 ### Preparing the Training Instance 
 
-In this section we will install and prepare the EC2 instance to run our training jobs. We will not go thru every step of the instance creation, assuming you already have an AWS account and knows how to deploy and properly configure an instance for SSH access. The main steps you have to watch for while creating the server are described below: 
+In this section we will install and prepare the EC2 instance to run our training jobs. We will not go thru every step of the instance creation, assuming you already have an AWS account and knows how to deploy and properly configure an instance for SSH access. 
+
+We have provided a [Cloudformation script](create_training_instance_us-east-1.yaml) to create the instance but if you want do customized it or deploy in another region than US-EAST-1, the main steps you have to watch for while creating the server are described below: 
 
 We will use the *Deep Learning AMI (Ubuntu) Version 18.0 - ami-0484cefb8f48dafe8* to create our instance (there can be a new version of the AMI when you deploy your instance once they get updated quite frequently, but it shouldn't be an issue for the project in case you decide to use a newwer one):
 ![EC2 AMI](images/ami1.png)
