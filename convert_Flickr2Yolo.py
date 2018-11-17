@@ -18,7 +18,7 @@ def convert(size, box):
     y = y*dh
     h = h*dh
     return (x,y,w,h)
-    
+
 
 fh = open('flickr_logos_27_dataset_training_set_annotation.txt')
 categories = set()
@@ -38,17 +38,15 @@ for line in fh:
         lista[key].append(datalist)
 fh.close()
 
-
 cat = list(categories)
-print (cat)
-
+names = ""
 
 for label in lista:
     id,c,fn = label.split("_")
     cid = cat.index(c)
     im = Image.open(pathInput+fn)
     size=im.size
-    fn2 = id+"_"+c+"_"+fn 
+    fn2 = id+"_"+c+"_"+fn
     w= int(im.size[0])
     h= int(im.size[1])
     a =  ""
@@ -64,7 +62,12 @@ for label in lista:
     text_file.write(a)
     text_file.close()
 
+for xclass in cat:
+    names = names + xclass + "\n"
+names_file = open("labels.txt", "w")
+names_file.write(names)
+names_file.close()
+
 print ("=========== DONE")
 print ("CATEGORIES LIST for LABELS")
 print (cat)
-
