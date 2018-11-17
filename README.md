@@ -19,9 +19,9 @@ I would recommend an AWS EC2 p3.2xlarge instance that contains a single V100 GPU
 
 * AWS EC2 p3.2xlarge instance 
 * AWS Deep Learning AMI (Deep Learning AMI (Ubuntu) Version 18.0 - ami-0484cefb8f48dafe8) 
-* [Darknet] (https://pjreddie.com/darknet/)
-* [Yolo (You Only Look Once)] (https://pjreddie.com/darknet/yolov2/)Object Detection 
-* [Darkflow] (https://github.com/thtrieu/darkflow) to help transform Yolo model into Tensorflow
+* [Darknet](https://pjreddie.com/darknet/)
+* [Yolo (You Only Look Once)](https://pjreddie.com/darknet/yolov2/)Object Detection 
+* [Darkflow](https://github.com/thtrieu/darkflow) to help transform Yolo model into Tensorflow
 
 ### Edge Device 
 The idea behind this project is to allow for low cost devicdes to perform near real time inference. ALthough it would be possible to run the models entirely on low power CPU, if we need something near real time we will need to boost its processing capacity with an accelerator. 
@@ -30,7 +30,7 @@ The idea behind this project is to allow for low cost devicdes to perform near r
 * 16GB card 
 * Raspbian 
 * USB Webcam 
-* [Movidius USB Stick] (https://www.movidius.com/) for accelerated
+* [Movidius USB Stick](https://www.movidius.com/) for accelerated
 
 ## Setting things up for Training
 
@@ -68,6 +68,10 @@ CUDNN=1
 OPENMP=1
 ````
 Then compile it runing ````make````
+If everything goes fine, you have an executable in your working dir. Let's test it ! 
+![test run](images/darknet1.png)
+The message shows it has compiled correctly. 
+
 
 
 
