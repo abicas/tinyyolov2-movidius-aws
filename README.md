@@ -1,4 +1,4 @@
-# tinyyolov2-movidius-aws
+# Tiny Yolo V2 ported to run on Edge Devices powered by Movidius, running on AWS 
 Custom training Object Detection on Tiny-YoloV2 on AWS and then transfering the model to Movidius to perform accelerated inference on  edge devices
 
 ## Introduction
