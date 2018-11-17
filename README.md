@@ -219,6 +219,66 @@ Before continuing we need to do a minor change on the source of a file in Darkfl
 
 Edit the file `~/darkflow/darkflow/utils/loader.py` and change `self.offset = 16` to `self.offset = 20` in `weights_walker.__init__()` (line 121)
 
+## Custom Training Tiny Yolo v2 
+
+For this project we will train the network to recognize Logos of 27 brands
+
+### Downloading and Preparing sample data 
+
+In order to train the network we will use a Dataset gathered from Flickr named [Flickr Logos Dataset](http://image.ntua.gr/iva/datasets/flickr_logos/).  It contains 810 annotated images, corresponding to 27 logo classes/brands (30 images for each class). All images are annotated with bounding boxes of the logo instances in the image.
+
+So, let's move on an gather this data on a separate directory once it will need to be prepared before training: 
+````bash
+source deactivate
+source activte python2
+mkdir ~/flickr27
+cd ~/flickr27
+wget http://image.ntua.gr/iva/datasets/flickr_logos/flickr_logos_27_dataset.tar.gz
+gunzip flickr_logos_27_dataset.tar.gz
+tar -xvf flickr_logos_27_dataset.tar
+cd flickr_logos_27_dataset/
+gunzip flickr_logos_27_dataset_images.tar.gz
+tar -xvf flickr_logos_27_dataset_images.tar.gz
+
+ls -la
+total 102592
+drwxrwxr-x 3 ubuntu ubuntu      4096 Nov 17 21:07 .
+drwxrwxr-x 3 ubuntu ubuntu      4096 Nov 17 21:07 ..
+-rw-rw-r-- 1 ubuntu ubuntu    264933 Apr 26  2011 flickr_logos_27_dataset_distractor_set_urls.txt
+drwxrwxr-x 2 ubuntu ubuntu     36864 Apr 26  2011 flickr_logos_27_dataset_images
+-rw-rw-r-- 1 ubuntu ubuntu 104550400 Apr 26  2011 flickr_logos_27_dataset_images.tar
+-rw-rw-r-- 1 ubuntu ubuntu      5850 Apr 26  2011 flickr_logos_27_dataset_query_set_annotation.txt
+-rw-rw-r-- 1 ubuntu ubuntu    182683 Apr 26  2011 flickr_logos_27_dataset_training_set_annotation.txt
+
+head -n 10 flickr_logos_27_dataset_training_set_annotation.txt
+144503924.jpg Adidas 1 38 12 234 142
+2451569770.jpg Adidas 1 242 208 413 331
+390321909.jpg Adidas 1 13 5 89 60
+4761260517.jpg Adidas 1 43 122 358 354
+4763210295.jpg Adidas 1 83 63 130 93
+4763210295.jpg Adidas 1 91 288 125 306
+4763210295.jpg Adidas 1 182 63 229 94
+4763210295.jpg Adidas 1 192 291 225 306
+4763210295.jpg Adidas 1 285 61 317 79
+4763210295.jpg Adidas 1 285 298 324 329
+````
+You will notice we have a directory with all the images and 3 txt files. 
+The file `flickr_logos_27_dataset_training_set_annotation.txt`  contains the main info we need for training: Picture, Class, Subset, Top, Left, Bottom, Right in pixels for the objects. A file can have more than on object like `4763210295.jpg` in the example above with many lines poiting to the same file. 
+
+Darknet uses a different file format for training where each picture `.jpg` has a file with the `.txt` extension containing in each line the ID for the class (integer) plus the object coordinates relative to the file size (top, left, width, height). 
+
+Instead of manually changing the format, you can use the script XPTO
+
+
+
+
+
+
+
+
+
+
+
 
 
 
