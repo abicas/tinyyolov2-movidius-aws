@@ -58,15 +58,18 @@ SSH the newly created instance and activate the *python2* environment with `sour
 
 ### Installing Darknet
 
-Let's move to the next step, installing the required software to training the models. You can follow the guide directly from [Darknet website](https://pjreddie.com/darknet/install/) or cut directly to the steps here: 
+Let's move to the next step, installing the required software to training the models. You can follow the guide directly from [Darknet Fork from AlexeyAB](https://github.com/AlexeyAB/) or cut directly to the steps here: 
 ````bash
-git clone https://github.com/pjreddie/darknet.git
+git clone https://github.com/AlexeyAB/darknet.git
 cd darknet
 ````
 In order to have CUDA enabled we need to change the ````Makefile```` changing the following parameters from 0 to 1 
 ````
 GPU=1
 CUDNN=1
+CUDNN_HALF=1
+OPENCV=0
+AVX=0
 OPENMP=1
 ````
 Then compile it runing ````make````.  
@@ -308,11 +311,13 @@ valid  = ./data/test.txt
 names = ./data/logos.txt
 backup = backup
 ````
+This file basically will tell Darknet the number of classes (we still have to configure this on the network configuration file), the list of images for training and validation, the labels and where to backup the training checkpoints. 
+
 Ok ! So now we have the annotations in the correct format, the labels in the right place, a list of images for training (1_*.jpg thru 5_*.jpg), a list of images for validation (6_*.jpg), and a file containing all the paths we need. 
 
-The default `.cfg` file is configured for 20 classes and testing. We need to change it to more classes and training. 
+The default network `.cfg` file is configured for 20 classes and testing. We need to change it to more classes and training. 
 
-Open the `cfg/yolov2-tiny-logos.cfg`in your edit and change the following lines to:
+Open the `cfg/yolov2-tiny-logos.cfg` in your edit and change the following lines to:
 
 ````bash
 1 [net]
@@ -365,42 +370,72 @@ Saving weights to yolov2-tiny-voc.conv.13
 
 ### Training with Custom Logos
 
-Ok ! Finally ! Now the real fun begins (and for some anxious people like me the worst part that is watching the training go on for a couple of hours hoping for the algorithms to improve at each interation) ! 
+Ok ! Finally ! Now the real fun begins (and, for some anxious people like me the worst part, that is watching the training go on and on for a couple of hours hoping for the algorithms to improve at each interation) ! 
 
 ````bash
 ./darknet detector train data/logos.data cfg/yolov2-tiny-logos.cfg yolov2-tiny-logos.conv.13
 yolov2-tiny-logos
 layer     filters    size              input                output
-    0 conv     16  3 x 3 / 1   416 x 416 x   3   ->   416 x 416 x  16  0.150 BFLOPs
-    1 max          2 x 2 / 2   416 x 416 x  16   ->   208 x 208 x  16
-    2 conv     32  3 x 3 / 1   208 x 208 x  16   ->   208 x 208 x  32  0.399 BFLOPs
-    3 max          2 x 2 / 2   208 x 208 x  32   ->   104 x 104 x  32
-    4 conv     64  3 x 3 / 1   104 x 104 x  32   ->   104 x 104 x  64  0.399 BFLOPs
-    5 max          2 x 2 / 2   104 x 104 x  64   ->    52 x  52 x  64
-    6 conv    128  3 x 3 / 1    52 x  52 x  64   ->    52 x  52 x 128  0.399 BFLOPs
-    7 max          2 x 2 / 2    52 x  52 x 128   ->    26 x  26 x 128
-    8 conv    256  3 x 3 / 1    26 x  26 x 128   ->    26 x  26 x 256  0.399 BFLOPs
-    9 max          2 x 2 / 2    26 x  26 x 256   ->    13 x  13 x 256
-   10 conv    512  3 x 3 / 1    13 x  13 x 256   ->    13 x  13 x 512  0.399 BFLOPs
-   11 max          2 x 2 / 1    13 x  13 x 512   ->    13 x  13 x 512
-   12 conv   1024  3 x 3 / 1    13 x  13 x 512   ->    13 x  13 x1024  1.595 BFLOPs
-   13 conv   1024  3 x 3 / 1    13 x  13 x1024   ->    13 x  13 x1024  3.190 BFLOPs
-   14 conv    160  1 x 1 / 1    13 x  13 x1024   ->    13 x  13 x 160  0.055 BFLOPs
-   15 detection
+   0 conv     16  3 x 3 / 1   416 x 416 x   3   ->   416 x 416 x  16 0.150 BF
+   1 max          2 x 2 / 2   416 x 416 x  16   ->   208 x 208 x  16 0.003 BF
+   2 conv     32  3 x 3 / 1   208 x 208 x  16   ->   208 x 208 x  32 0.399 BF
+   3 max          2 x 2 / 2   208 x 208 x  32   ->   104 x 104 x  32 0.001 BF
+   4 conv     64  3 x 3 / 1   104 x 104 x  32   ->   104 x 104 x  64 0.399 BF
+   5 max          2 x 2 / 2   104 x 104 x  64   ->    52 x  52 x  64 0.001 BF
+   6 conv    128  3 x 3 / 1    52 x  52 x  64   ->    52 x  52 x 128 0.399 BF
+   7 max          2 x 2 / 2    52 x  52 x 128   ->    26 x  26 x 128 0.000 BF
+   8 conv    256  3 x 3 / 1    26 x  26 x 128   ->    26 x  26 x 256 0.399 BF
+   9 max          2 x 2 / 2    26 x  26 x 256   ->    13 x  13 x 256 0.000 BF
+  10 conv    512  3 x 3 / 1    13 x  13 x 256   ->    13 x  13 x 512 0.399 BF
+  11 max          2 x 2 / 1    13 x  13 x 512   ->    13 x  13 x 512 0.000 BF
+  12 conv   1024  3 x 3 / 1    13 x  13 x 512   ->    13 x  13 x1024 1.595 BF
+  13 conv   1024  3 x 3 / 1    13 x  13 x1024   ->    13 x  13 x1024 3.190 BF
+  14 conv    160  1 x 1 / 1    13 x  13 x1024   ->    13 x  13 x 160 0.055 BF
+  15 detection
 mask_scale: Using default '1.000000'
-Loading weights from yolov2-tiny-logos.conv.13...Done!
+Total BFLOPS 6.989
+Loading weights from yolov2-tiny-logos.conv.13...
+ seen 64
+Done!
 Learning Rate: 0.001, Momentum: 0.9, Decay: 0.0005
 Resizing
-576
-Loaded: 0.000056 seconds
-Region Avg IOU: 0.222891, Class: 0.053764, Obj: 0.494056, No Obj: 0.524390, Avg Recall: 0.125000,  count: 40
-Region Avg IOU: 0.139555, Class: 0.033544, Obj: 0.453380, No Obj: 0.524479, Avg Recall: 0.023256,  count: 43
-Region Avg IOU: 0.203201, Class: 0.025441, Obj: 0.460821, No Obj: 0.526109, Avg Recall: 0.052632,  count: 57
-Region Avg IOU: 0.197740, Class: 0.040392, Obj: 0.547493, No Obj: 0.524353, Avg Recall: 0.093023,  count: 43
-Region Avg IOU: 0.210658, Class: 0.041557, Obj: 0.405024, No Obj: 0.524432, Avg Recall: 0.055556,  count: 54
-Region Avg IOU: 0.224586, Class: 0.040483, Obj: 0.528059, No Obj: 0.523632, Avg Recall: 0.098039,  count: 51
-Region Avg IOU: 0.191087, Class: 0.046858, Obj: 0.577232, No Obj: 0.523932, Avg Recall: 0.027027,  count: 37
-Region Avg IOU: 0.186272, Class: 0.035375, Obj: 0.465858, No Obj: 0.525054, Avg Recall: 0.066667,  count: 90
-1: 537.416504, 537.416504 avg, 0.001000 rate, 2.609928 seconds, 256 images
-Loaded: 0.000073 seconds
+512 x 512
+ try to allocate workspace = 168165958 * sizeof(float),  CUDA allocate done!
+Loaded: 0.000047 seconds
+Region Avg IOU: 0.237901, Class: 0.042992, Obj: 0.569356, No Obj: 0.550839, Avg Recall: 0.074627,  count: 67
+Region Avg IOU: 0.200431, Class: 0.045643, Obj: 0.569926, No Obj: 0.550581, Avg Recall: 0.051020,  count: 98
+Region Avg IOU: 0.270504, Class: 0.034779, Obj: 0.590877, No Obj: 0.550647, Avg Recall: 0.083333,  count: 36
+Region Avg IOU: 0.240480, Class: 0.048247, Obj: 0.566323, No Obj: 0.551093, Avg Recall: 0.121739,  count: 115
+Region Avg IOU: 0.312113, Class: 0.032807, Obj: 0.603046, No Obj: 0.550173, Avg Recall: 0.257143,  count: 35
+Region Avg IOU: 0.337527, Class: 0.047015, Obj: 0.625224, No Obj: 0.550526, Avg Recall: 0.226415,  count: 53
+Region Avg IOU: 0.215338, Class: 0.040308, Obj: 0.546044, No Obj: 0.551285, Avg Recall: 0.066667,  count: 60
+Region Avg IOU: 0.327286, Class: 0.030411, Obj: 0.561637, No Obj: 0.551706, Avg Recall: 0.166667,  count: 42
+
+ 1: 27.552214, 27.552214 avg loss, 0.000100 rate, 1.892316 seconds, 256 images
+Loaded: 0.000049 seconds
+Region Avg IOU: 0.329077, Class: 0.037939, Obj: 0.435169, No Obj: 0.455989, Avg Recall: 0.190476,  count: 42
+Region Avg IOU: 0.317284, Class: 0.043579, Obj: 0.503651, No Obj: 0.456496, Avg Recall: 0.180328,  count: 61
+Region Avg IOU: 0.279336, Class: 0.042566, Obj: 0.444955, No Obj: 0.456567, Avg Recall: 0.180328,  count: 61
+Region Avg IOU: 0.336229, Class: 0.035944, Obj: 0.495486, No Obj: 0.456934, Avg Recall: 0.186047,  count: 43
+Region Avg IOU: 0.330333, Class: 0.038069, Obj: 0.453229, No Obj: 0.456721, Avg Recall: 0.187500,  count: 80
+Region Avg IOU: 0.334488, Class: 0.035607, Obj: 0.507740, No Obj: 0.457076, Avg Recall: 0.176471,  count: 34
+Region Avg IOU: 0.385838, Class: 0.032720, Obj: 0.454051, No Obj: 0.456297, Avg Recall: 0.228571,  count: 35
+Region Avg IOU: 0.295446, Class: 0.031492, Obj: 0.463530, No Obj: 0.456919, Avg Recall: 0.152174,  count: 46
+
+ 2: 20.320900, 26.829082 avg loss, 0.000100 rate, 1.773403 seconds, 512 images
+Loaded: 0.000061 seconds
 ````
+
+### What is going on during training ? 
+
+This training is going to run for a couple of hours at least, so if you prefer you can start the command above with `nohup` to avoid losing the process in case connection drops. 
+
+Each iteration will present you with the current status of the deep learning, i.e.: 
+````bash
+ 2: 20.320900, 26.829082 avg loss, 0.000100 rate, 1.773403 seconds, 512 images
+````
+- The first number is the iteration, it will only grow and this is the number that will be refered to in the backup files. 
+- The sdecond number is the loss of the current iteration
+- The third number is the loss average for all the iterations, this is going to be main metric we will follow
+
+
