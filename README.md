@@ -435,7 +435,29 @@ Each iteration will present you with the current status of the deep learning, i.
  2: 20.320900, 26.829082 avg loss, 0.000100 rate, 1.773403 seconds, 512 images
 ````
 - The first number is the iteration, it will only grow and this is the number that will be refered to in the backup files. 
-- The sdecond number is the loss of the current iteration
+- The second number is the loss of the current iteration
 - The third number is the loss average for all the iterations, this is going to be main metric we will follow
+- The fourth number is the learning rate of the algorithm, governed by the steps and scale paraemters in `.cfg` file 
+- The fifth number if the time for the whole iteration to complete
+- The sixth number is the total number of images analyzed so far
+
+Although you don't need to worry much about it at first (but it might be useful to fine tune your models in the future), during each iteration, you will see values like those below, with detailf of each train subdivion: 
+````bash
+Region Avg IOU: 0.336229, Class: 0.035944, Obj: 0.495486, No Obj: 0.456934, Avg Recall: 0.186047,  count: 43
+````
+- Region Avg IOU: % Match between the objects detected and the objects being trained (see AlexeyAB github for a detailed explanation of IOU calculation)
+- Class: % Match of classes in pictures 
+- Obj: % Math of objects in pictures 
+- No Obj: % Match of amount of objects found
+- Avg REcall: Average REcall of the subdivision
+
+*So, when do I stop the training ?* 
+There is no right answer. Some rule of thumbs are: 
+- when avg loss stales betwwen many iterations (or grow)
+- when avg loss goes beyond 0.06
+- allow for at least 2000 iterations per class and 4000 iterations per class
+
+In this project, around 11000 iterations you should find yourself with a not perfect but useful model. 
+
 
 
