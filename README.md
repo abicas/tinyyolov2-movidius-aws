@@ -720,9 +720,9 @@ class_id = 26, name = McDonalds, 	 ap = 90.91 %
 Total Detection Time: 18.000000 Seconds
 ````
 
-So, comparing all the 3 outputs, WE HAVE A WINNER ! As we can see above, the batch 11000 found more objects but got more of them wrong, while 15300 found less objects but is showing a better overall balance on indicators. Mainly F1-score, mAP, Recall and IOU. We also can see that Apple is a tricky logo, when comparing to the performance of the other ones. 
+So, comparing all the 3 outputs, WE HAVE A WINNER ! As we can see above, the batch 11000 found more objects but got more of them wrong, while 15300 found less objects but is showing a better overall balance on indicators including the main ones: F1-score, mAP, Recall and IOU. We also can see that Apple is a tricky logo, when comparing to the performance of the other ones. 
 
-## Converting our Winner into Tensorflow
+## Converting our Winner Model into Tensorflow with Darkflow
 
 Let's see how Darkflow is performing with those files and then run the conversion to Tensorflow. Running the commands below will generate a `~/darknet/data/logos/out/` directory with the inference based on those models (you can add a --json flag to generate json files instead of images)
 ````bash
@@ -765,5 +765,58 @@ Total time = 21.416011333465576s / 256 inps = 11.953673166018708 ips
 .
 .
 ````
+Below some results from this run. It has missed some logos, specially Apple and Sprite, while found some blurred and hidden ones. Once Yolo focus is speed sometimes missing some detections is ok:    
+![results darkflow](images/sample01.png)
 
+Once we have tested and checked that the model is workign as desired, we need to convert it first to Tensorflow to be able to move it to Raspberry Pi with Movidius. Let's run the command below and check the results under `~/darkflow/built_graph/`: 
+
+````bash
+python3 flow --model ../darknet/cfg/yolov2-tiny-logos.cfg --load ../darknet/backup/yolov2-tiny-logos_15300.weights --labels ../darknet/data/logos.txt --savepb
+
+/home/ubuntu/darkflow/darkflow/dark/darknet.py:54: UserWarning: ./cfg/yolov2-tiny-logos_15300.cfg not found, use ../darknet/cfg/yolov2-tiny-logos.cfg instead
+  cfg_path, FLAGS.model))
+Parsing ../darknet/cfg/yolov2-tiny-logos.cfg
+Loading ../darknet/backup/yolov2-tiny-logos_15300.weights ...
+Successfully identified 63615060 bytes
+Finished in 0.004984855651855469s
+
+Building net ...
+Source | Train? | Layer description                | Output size
+-------+--------+----------------------------------+---------------
+       |        | input                            | (?, 416, 416, 3)
+ Load  |  Yep!  | conv 3x3p1_1  +bnorm  leaky      | (?, 416, 416, 16)
+ Load  |  Yep!  | maxp 2x2p0_2                     | (?, 208, 208, 16)
+ Load  |  Yep!  | conv 3x3p1_1  +bnorm  leaky      | (?, 208, 208, 32)
+ Load  |  Yep!  | maxp 2x2p0_2                     | (?, 104, 104, 32)
+ Load  |  Yep!  | conv 3x3p1_1  +bnorm  leaky      | (?, 104, 104, 64)
+ Load  |  Yep!  | maxp 2x2p0_2                     | (?, 52, 52, 64)
+ Load  |  Yep!  | conv 3x3p1_1  +bnorm  leaky      | (?, 52, 52, 128)
+ Load  |  Yep!  | maxp 2x2p0_2                     | (?, 26, 26, 128)
+ Load  |  Yep!  | conv 3x3p1_1  +bnorm  leaky      | (?, 26, 26, 256)
+ Load  |  Yep!  | maxp 2x2p0_2                     | (?, 13, 13, 256)
+ Load  |  Yep!  | conv 3x3p1_1  +bnorm  leaky      | (?, 13, 13, 512)
+ Load  |  Yep!  | maxp 2x2p0_1                     | (?, 13, 13, 512)
+ Load  |  Yep!  | conv 3x3p1_1  +bnorm  leaky      | (?, 13, 13, 1024)
+ Load  |  Yep!  | conv 3x3p1_1  +bnorm  leaky      | (?, 13, 13, 1024)
+ Load  |  Yep!  | conv 1x1p0_1    linear           | (?, 13, 13, 160)
+-------+--------+----------------------------------+---------------
+Running entirely on CPU
+2018-11-19 17:36:29.159563: I tensorflow/core/platform/cpu_feature_guard.cc:141] Your CPU supports instructions that this TensorFlow binary was not compiled to use: AVX2 FMA
+Finished in 1.3762948513031006s
+
+Rebuild a constant version ...
+Done
+
+ls -la built_graph/
+total 62148
+drwxrwxr-x  2 ubuntu ubuntu     4096 Nov 19 17:37 .
+drwxrwxr-x 12 ubuntu ubuntu     4096 Nov 17 20:27 ..
+-rw-rw-r--  1 ubuntu ubuntu     2151 Nov 19 17:36 yolov2-tiny-logos.meta
+-rw-rw-r--  1 ubuntu ubuntu 63624884 Nov 19 17:36 yolov2-tiny-logos.pb
+````
+That is all we needed the EC2 instance for. Download those two files or copy them directly to Raspberry Pi and we resume from there. 
+
+**In case you need to skip some steps, I will include most of the generated files in the `support` folder** 
+
+## 
 
