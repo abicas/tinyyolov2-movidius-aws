@@ -473,8 +473,9 @@ On my training (and it may vary A LOT), around 10000-12000 batches you should gi
 
 ![Learning Curve](images/loss_batch_train.jpg) 
 
-You will notice that darknet saves a checkpoint file at `backup/` folder at every 100 batches. **Which of the weights file should I pick?** 
-![backup weights](images/backup_weights.png)
+You will notice that darknet saves a checkpoint file at `backup/` folder at every 100 batches. **Which of the weights file should I pick?**    
+
+![backup weights](images/backup_weights.png)    
 
 We tend to think that the last one is the best one, but it is a good practice testing before deciding which one to pick. 
 I decided to let the training run for a little bit longer and around 15000 batches it started  showing some better results: 
@@ -723,5 +724,46 @@ So, comparing all the 3 outputs, WE HAVE A WINNER ! As we can see above, the bat
 
 ## Converting our Winner into Tensorflow
 
+Let's see how Darkflow is performing with those files and then run the conversion to Tensorflow. Running the commands below will generate a `~/darknet/data/logos/out/` directory with the inference based on those models (you can add a --json flag to generate json files instead of images)
+````bash
+source deactivate
+source activate python3
+cd ~/darkflow
+python3 flow --imgdir ../darknet/data/logos/ --model ../darknet/cfg/yolov2-tiny-logos.cfg --load ../darknet/backup/yolov2-tiny-logos_15300.weights --labels ../darknet/data/logos.txt --gpu 1 --batch 256
+Parsing ../darknet/cfg/yolov2-tiny-logos.cfg
+Loading ../darknet/backup/yolov2-tiny-logos_15300.weights ...
+Successfully identified 63615060 bytes
+Finished in 0.00484776496887207s
+
+Building net ...
+Source | Train? | Layer description                | Output size
+-------+--------+----------------------------------+---------------
+       |        | input                            | (?, 416, 416, 3)
+ Load  |  Yep!  | conv 3x3p1_1  +bnorm  leaky      | (?, 416, 416, 16)
+ Load  |  Yep!  | maxp 2x2p0_2                     | (?, 208, 208, 16)
+ Load  |  Yep!  | conv 3x3p1_1  +bnorm  leaky      | (?, 208, 208, 32)
+ Load  |  Yep!  | maxp 2x2p0_2                     | (?, 104, 104, 32)
+ Load  |  Yep!  | conv 3x3p1_1  +bnorm  leaky      | (?, 104, 104, 64)
+ Load  |  Yep!  | maxp 2x2p0_2                     | (?, 52, 52, 64)
+ Load  |  Yep!  | conv 3x3p1_1  +bnorm  leaky      | (?, 52, 52, 128)
+ Load  |  Yep!  | maxp 2x2p0_2                     | (?, 26, 26, 128)
+ Load  |  Yep!  | conv 3x3p1_1  +bnorm  leaky      | (?, 26, 26, 256)
+ Load  |  Yep!  | maxp 2x2p0_2                     | (?, 13, 13, 256)
+ Load  |  Yep!  | conv 3x3p1_1  +bnorm  leaky      | (?, 13, 13, 512)
+ Load  |  Yep!  | maxp 2x2p0_1                     | (?, 13, 13, 512)
+ Load  |  Yep!  | conv 3x3p1_1  +bnorm  leaky      | (?, 13, 13, 1024)
+ Load  |  Yep!  | conv 3x3p1_1  +bnorm  leaky      | (?, 13, 13, 1024)
+ Load  |  Yep!  | conv 1x1p0_1    linear           | (?, 13, 13, 160)
+-------+--------+----------------------------------+---------------
+GPU mode with 1.0 usage
+2018-11-19 16:56:33.325172: I tensorflow/core/platform/cpu_feature_guard.cc:141] Your CPU supports instructions that this TensorFlow binary was not compiled to use: AVX2 FMA
+Finished in 1.31251859664917s
+
+Forwarding 256 inputs ...
+Total time = 21.416011333465576s / 256 inps = 11.953673166018708 ips
+.
+.
+.
+````
 
 
