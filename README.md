@@ -432,43 +432,296 @@ Loaded: 0.000061 seconds
 
 This training is going to run for a couple of hours at least, so if you prefer you can start the command above with `nohup` to avoid losing the process in case connection drops. 
 
-Each iteration will present you with the current status of the deep learning, i.e.: 
+Each batch will present you with the current status of the deep learning, i.e.: 
 ````bash
  2: 20.320900, 26.829082 avg loss, 0.000100 rate, 1.773403 seconds, 512 images
 ````
-- The first number is the iteration, it will only grow and this is the number that will be refered to in the backup files. 
-- The second number is the loss of the current iteration
-- The third number is the loss average for all the iterations, this is going to be main metric we will follow
+- The first number is the batch, it will only grow and this is the number that will be refered to in the backup files. 
+- The second number is the loss of the current batch
+- The third number is the loss average for all the batches, this is going to be main metric we will follow
 - The fourth number is the learning rate of the algorithm, governed by the steps and scale paraemters in `.cfg` file 
-- The fifth number if the time for the whole iteration to complete
+- The fifth number if the time for the whole batch to complete
 - The sixth number is the total number of images analyzed so far
 
-Although you don't need to worry much about it at first (but it might be useful to fine tune your models in the future), during each iteration, you will see values like those below, with detailf of each train subdivision: 
+Although you don't need to worry much about it at first (but it might be useful to help select the best `.weights` file and fine tune your models in the future), during each batch, you will see values like those below, with detailf of each train subdivision: 
 ````bash
 Region Avg IOU: 0.336229, Class: 0.035944, Obj: 0.495486, No Obj: 0.456934, Avg Recall: 0.186047,  count: 43
 ````
-- Region Avg IOU: % Match between the objects detected and the objects being trained
-- Class: % Match of classes in pictures 
-- Obj: % Math of objects in pictures 
-- No Obj: % Match of amount of objects found
-- Avg Recall: Average Recall of the subdivision
+- Region Avg IOU: % Instersect of union of objects and detections 
+- Class: % of True Positives
+- Obj: % of confidence that the algorithm found an object in the bounding boxes it selected. Higher values means your network is very confident that there is an object in the ground truth bounding boxes, implying our training is going well.  
+- No Obj: Same as above but for bounding boxes where the network thinks there shouldn't be an object there. Lower values here are expected. 
+- Avg Recall: Out of the objects that should be detected, how many objects has the network actually detected, in %. 
 
 Borrowing from AlexeyAB, here is a good graphical explanation of these values: 
 ![Iou and recall](https://camo.githubusercontent.com/ffd00e8c7f54d4710edea3bb47e201c8bedab074/68747470733a2f2f6873746f2e6f72672f66696c65732f6361382f3836362f6437362f63613838363664373666623834303232383934306462663434326137663036612e6a7067)
 
+Also, as a reference, [Rafael Padilla's Github](https://github.com/rafaelpadilla/darknet/blob/master/README.md#faq_yolo) has a great FAQ on those outputs. 
 
-*So, when do I stop the training ?* 
+*If you think you need to change parameters during training, like scale and steps, drknet allows you to stop training and resume from the last checkpoint. Simply stop the training, change the config file, and restart darknet pointing to the latest checkpoint in the backup/ folder and it will resume from there.* 
+
+### So, when do I stop the training ?
 
 There is no right answer. Some rule of thumbs are: 
-- when avg loss stales betwwen many iterations (or grow)
+- when avg loss stales between many batches (or grow)
 - when avg loss goes beyond 0.06
-- allow for at least 2000 iterations per class and 4000 iterations per class
+- allow for at least 2000 batches per class and 4000 batches per class
 
-In this project, around 11000 iterations you should find yourself with useful model (although not perfect). 
+It might be tempting to think that running it for way longer might always give you better results. This may cause what is known as *overfitting*, that happens when the model is perfect for the testing data but it got so addicted to it that is not useful in other not seen before data. Sadly there is no magic in telling you when to stop training and when enough is enough. I'd recommend checking [AlexeyAB github](https://github.com/AlexeyAB/darknet#when-should-i-stop-training) if you want to know more about when to stop training.
 
-It might be tempting to think that running it for way longer might always give you better results. This may cause what is known as *overfitting*, that happens when the model is perfect for the testing data but it got so addicted to it that is not useful in other not seen before data. 
+On my training (and it may vary A LOT), around 10000-12000 batches you should give us an useful model (although not perfect). As you can see on my training results below, around this range we achieved our minimals for loss and average loss. 
+
+![Learning Curve](images/loss_batch_train.jpg) 
+
+You will notice that darknet saves a checkpoint file at `backup/` folder at every 100 batches. **Which of the weights file should I pick?** 
+![backup weights](images/backup_weights.png)
+
+We tend to think that the last one is the best one, but it is a good practice testing before deciding which one to pick. 
+I decided to let the training run for a little bit longer and around 15000 batches it started  showing some better results: 
+````bash
+11000: 0.051831, 0.085730 avg loss, 0.001000 rate, 0.886196 seconds, 2816000 images
+15000: 0.055898, 0.075187 avg loss, 0.001000 rate, 0.768312 seconds, 3840000 images
+15300: 0.053958, 0.071382 avg loss, 0.001000 rate, 1.472932 seconds, 3916800 images
+````
+So, which one should I pick ? They all seems good, right ? 
+
+First, lets check the subdivision values for each one: 
+````bash 
+Region Avg IOU: 0.769597, Class: 0.997826, Obj: 0.720678, No Obj: 0.008424, Avg Recall: 0.898305,  count: 59
+Region Avg IOU: 0.831775, Class: 0.998854, Obj: 0.629594, No Obj: 0.006677, Avg Recall: 1.000000,  count: 37
+Region Avg IOU: 0.779955, Class: 0.998002, Obj: 0.700337, No Obj: 0.006169, Avg Recall: 0.947368,  count: 38
+Region Avg IOU: 0.785495, Class: 0.997534, Obj: 0.629091, No Obj: 0.006374, Avg Recall: 0.979167,  count: 48
+Region Avg IOU: 0.758585, Class: 0.996862, Obj: 0.719118, No Obj: 0.006390, Avg Recall: 0.894737,  count: 38
+Region Avg IOU: 0.832889, Class: 0.998609, Obj: 0.755584, No Obj: 0.007684, Avg Recall: 1.000000,  count: 41
+Region Avg IOU: 0.817657, Class: 0.996706, Obj: 0.731653, No Obj: 0.006975, Avg Recall: 0.976191,  count: 42
+Region Avg IOU: 0.822050, Class: 0.995326, Obj: 0.688538, No Obj: 0.007016, Avg Recall: 0.975000,  count: 40
+11000: 0.051831, 0.085730 avg loss, 0.001000 rate, 0.886196 seconds, 2816000 images
+
+Region Avg IOU: 0.779936, Class: 0.996086, Obj: 0.761334, No Obj: 0.008916, Avg Recall: 0.886364,  count: 44
+Region Avg IOU: 0.773786, Class: 0.998431, Obj: 0.803555, No Obj: 0.008323, Avg Recall: 0.880952,  count: 42
+Region Avg IOU: 0.802507, Class: 0.998285, Obj: 0.786205, No Obj: 0.008119, Avg Recall: 0.977778,  count: 45
+Region Avg IOU: 0.780445, Class: 0.998752, Obj: 0.789752, No Obj: 0.008198, Avg Recall: 0.950000,  count: 60
+Region Avg IOU: 0.860431, Class: 0.992143, Obj: 0.874964, No Obj: 0.008254, Avg Recall: 1.000000,  count: 32
+Region Avg IOU: 0.787821, Class: 0.998620, Obj: 0.830654, No Obj: 0.007323, Avg Recall: 0.948718,  count: 39
+Region Avg IOU: 0.750195, Class: 0.998070, Obj: 0.772936, No Obj: 0.009298, Avg Recall: 0.862745,  count: 51
+Region Avg IOU: 0.730504, Class: 0.998082, Obj: 0.746031, No Obj: 0.009749, Avg Recall: 0.864407,  count: 59
+15000: 0.055898, 0.075187 avg loss, 0.001000 rate, 0.768312 seconds, 3840000 images
+
+Region Avg IOU: 0.811499, Class: 0.999063, Obj: 0.820829, No Obj: 0.006063, Avg Recall: 1.000000,  count: 54
+Region Avg IOU: 0.813230, Class: 0.999623, Obj: 0.813203, No Obj: 0.005878, Avg Recall: 0.978723,  count: 47
+Region Avg IOU: 0.862018, Class: 0.997767, Obj: 0.830495, No Obj: 0.006056, Avg Recall: 0.980000,  count: 50
+Region Avg IOU: 0.854160, Class: 0.999117, Obj: 0.860918, No Obj: 0.005823, Avg Recall: 1.000000,  count: 40
+Region Avg IOU: 0.805883, Class: 0.995210, Obj: 0.755923, No Obj: 0.005967, Avg Recall: 0.959184,  count: 49
+Region Avg IOU: 0.845882, Class: 0.998725, Obj: 0.897177, No Obj: 0.006791, Avg Recall: 1.000000,  count: 43
+Region Avg IOU: 0.846816, Class: 0.998339, Obj: 0.878354, No Obj: 0.005325, Avg Recall: 1.000000,  count: 35
+Region Avg IOU: 0.801064, Class: 0.997983, Obj: 0.801725, No Obj: 0.005551, Avg Recall: 0.978723,  count: 47
+15300: 0.053958, 0.071382 avg loss, 0.001000 rate, 1.472932 seconds, 3916800 images
+````
+Based on this analysis:
+- Batch 15300 showed some better IOU Numbers, meaning the detections boxes were closer to the truth
+- All of them nailed 99% of the classes 
+- Batch 15300 showed better numbers regarding True Positives (Obj metric)
+- Batch 15300 showed also a better Recall 
+
+Ok, so it seems we have a candidate. One things is a good performance with a subset of images, another thing is doing well for all of them. Let's put it to the test on all the images we used to train and validate to see how it would behave
+
+Let's create a single `data/all.txt` file with all the images and them run the models against these set to see the results. 
+
+````bash
+cd ~/darknet
+ls data/logos/*.jpg > data/all.txt
+`````
+
+Also let's edit the `logos.data`file to point the validation test to the newly created `data/all.txt`: 
+````bash
+classes= 27
+train  = data/train.txt
+#valid  = data/test.txt
+valid  = data/all.txt
+names = data/logos.txt
+backup = backup
+`````
+
+And now we run darknet against all the images using all the three weights we selected: 
+````bash
+./darknet detector map data/logos.data cfg/yolov2-tiny-logos.cfg backup/yolov2-tiny-logos_11000.weights
+layer     filters    size              input                output
+   0 conv     16  3 x 3 / 1   416 x 416 x   3   ->   416 x 416 x  16 0.150 BF
+   1 max          2 x 2 / 2   416 x 416 x  16   ->   208 x 208 x  16 0.003 BF
+   2 conv     32  3 x 3 / 1   208 x 208 x  16   ->   208 x 208 x  32 0.399 BF
+   3 max          2 x 2 / 2   208 x 208 x  32   ->   104 x 104 x  32 0.001 BF
+   4 conv     64  3 x 3 / 1   104 x 104 x  32   ->   104 x 104 x  64 0.399 BF
+   5 max          2 x 2 / 2   104 x 104 x  64   ->    52 x  52 x  64 0.001 BF
+   6 conv    128  3 x 3 / 1    52 x  52 x  64   ->    52 x  52 x 128 0.399 BF
+   7 max          2 x 2 / 2    52 x  52 x 128   ->    26 x  26 x 128 0.000 BF
+   8 conv    256  3 x 3 / 1    26 x  26 x 128   ->    26 x  26 x 256 0.399 BF
+   9 max          2 x 2 / 2    26 x  26 x 256   ->    13 x  13 x 256 0.000 BF
+  10 conv    512  3 x 3 / 1    13 x  13 x 256   ->    13 x  13 x 512 0.399 BF
+  11 max          2 x 2 / 1    13 x  13 x 512   ->    13 x  13 x 512 0.000 BF
+  12 conv   1024  3 x 3 / 1    13 x  13 x 512   ->    13 x  13 x1024 1.595 BF
+  13 conv   1024  3 x 3 / 1    13 x  13 x1024   ->    13 x  13 x1024 3.190 BF
+  14 conv    160  1 x 1 / 1    13 x  13 x1024   ->    13 x  13 x 160 0.055 BF
+  15 detection
+mask_scale: Using default '1.000000'
+Total BFLOPS 6.989
+Loading weights from backup/yolov2-tiny-logos_11000.weights...
+.
+.
+.
+detections_count = 37143, unique_truth_count = 4536
+class_id = 0, name = Intel, 43   ap = 97.69 %
+class_id = 1, name = Texaco, 	 ap = 90.91 %
+class_id = 2, name = DHL, 	 ap = 90.91 %
+class_id = 3, name = Cocacola, 	 ap = 90.38 %
+class_id = 4, name = Citroen, 	 ap = 87.48 %
+class_id = 5, name = Yahoo, 	 ap = 90.91 %
+class_id = 6, name = Nike, 	 ap = 88.40 %
+class_id = 7, name = RedBull, 	 ap = 90.91 %
+class_id = 8, name = Ford, 	 ap = 90.70 %
+class_id = 9, name = Apple, 	 ap = 53.16 %
+class_id = 10, name = Puma, 	 ap = 88.32 %
+class_id = 11, name = Adidas, 	 ap = 90.91 %
+class_id = 12, name = HP, 	 ap = 89.97 %
+class_id = 13, name = Starbucks, 	 ap = 95.80 %
+class_id = 14, name = Google, 	 ap = 90.91 %
+class_id = 15, name = Unicef, 	 ap = 81.82 %
+class_id = 16, name = Ferrari, 	 ap = 90.38 %
+class_id = 17, name = Pepsi, 	 ap = 84.98 %
+class_id = 18, name = Porsche, 	 ap = 94.66 %
+class_id = 19, name = Vodafone, 	 ap = 61.77 %
+class_id = 20, name = Fedex, 	 ap = 90.91 %
+class_id = 21, name = BMW, 	 ap = 96.08 %
+class_id = 22, name = Heineken, 	 ap = 90.91 %
+class_id = 23, name = Nbc, 	 ap = 98.48 %
+class_id = 24, name = Sprite, 	 ap = 87.54 %
+class_id = 25, name = Mini, 	 ap = 90.91 %
+class_id = 26, name = McDonalds, 	 ap = 90.00 %
+ for thresh = 0.25, precision = 0.87, recall = 0.87, F1-score = 0.87
+ for thresh = 0.25, TP = 3951, FP = 583, FN = 585, average IoU = 69.91 %
+
+ mean average precision (mAP) = 0.883629, or 88.36 %
+Total Detection Time: 18.000000 Seconds
+
+./darknet detector map data/logos.data cfg/yolov2-tiny-logos.cfg backup/yolov2-tiny-logos_15000.weights
+layer     filters    size              input                output
+   0 conv     16  3 x 3 / 1   416 x 416 x   3   ->   416 x 416 x  16 0.150 BF
+   1 max          2 x 2 / 2   416 x 416 x  16   ->   208 x 208 x  16 0.003 BF
+   2 conv     32  3 x 3 / 1   208 x 208 x  16   ->   208 x 208 x  32 0.399 BF
+   3 max          2 x 2 / 2   208 x 208 x  32   ->   104 x 104 x  32 0.001 BF
+   4 conv     64  3 x 3 / 1   104 x 104 x  32   ->   104 x 104 x  64 0.399 BF
+   5 max          2 x 2 / 2   104 x 104 x  64   ->    52 x  52 x  64 0.001 BF
+   6 conv    128  3 x 3 / 1    52 x  52 x  64   ->    52 x  52 x 128 0.399 BF
+   7 max          2 x 2 / 2    52 x  52 x 128   ->    26 x  26 x 128 0.000 BF
+   8 conv    256  3 x 3 / 1    26 x  26 x 128   ->    26 x  26 x 256 0.399 BF
+   9 max          2 x 2 / 2    26 x  26 x 256   ->    13 x  13 x 256 0.000 BF
+  10 conv    512  3 x 3 / 1    13 x  13 x 256   ->    13 x  13 x 512 0.399 BF
+  11 max          2 x 2 / 1    13 x  13 x 512   ->    13 x  13 x 512 0.000 BF
+  12 conv   1024  3 x 3 / 1    13 x  13 x 512   ->    13 x  13 x1024 1.595 BF
+  13 conv   1024  3 x 3 / 1    13 x  13 x1024   ->    13 x  13 x1024 3.190 BF
+  14 conv    160  1 x 1 / 1    13 x  13 x1024   ->    13 x  13 x 160 0.055 BF
+  15 detection
+mask_scale: Using default '1.000000'
+Total BFLOPS 6.989
+Loading weights from backup/yolov2-tiny-logos_15000.weights...
+.
+.
+.
+detections_count = 25270, unique_truth_count = 4536
+class_id = 0, name = Intel, 70   ap = 100.00 %
+class_id = 1, name = Texaco, 	 ap = 90.91 %
+class_id = 2, name = DHL, 	 ap = 90.83 %
+class_id = 3, name = Cocacola, 	 ap = 90.91 %
+class_id = 4, name = Citroen, 	 ap = 93.31 %
+class_id = 5, name = Yahoo, 	 ap = 90.91 %
+class_id = 6, name = Nike, 	 ap = 87.24 %
+class_id = 7, name = RedBull, 	 ap = 90.91 %
+class_id = 8, name = Ford, 	 ap = 90.77 %
+class_id = 9, name = Apple, 	 ap = 54.55 %
+class_id = 10, name = Puma, 	 ap = 90.69 %
+class_id = 11, name = Adidas, 	 ap = 90.69 %
+class_id = 12, name = HP, 	 ap = 90.33 %
+class_id = 13, name = Starbucks, 	 ap = 94.75 %
+class_id = 14, name = Google, 	 ap = 90.91 %
+class_id = 15, name = Unicef, 	 ap = 81.59 %
+class_id = 16, name = Ferrari, 	 ap = 99.51 %
+class_id = 17, name = Pepsi, 	 ap = 90.25 %
+class_id = 18, name = Porsche, 	 ap = 100.00 %
+class_id = 19, name = Vodafone, 	 ap = 62.68 %
+class_id = 20, name = Fedex, 	 ap = 90.91 %
+class_id = 21, name = BMW, 	 ap = 96.79 %
+class_id = 22, name = Heineken, 	 ap = 90.91 %
+class_id = 23, name = Nbc, 	 ap = 99.83 %
+class_id = 24, name = Sprite, 	 ap = 89.56 %
+class_id = 25, name = Mini, 	 ap = 90.91 %
+class_id = 26, name = McDonalds, 	 ap = 88.18 %
+ for thresh = 0.25, precision = 0.90, recall = 0.91, F1-score = 0.90
+ for thresh = 0.25, TP = 4120, FP = 478, FN = 416, average IoU = 73.68 %
+
+ mean average precision (mAP) = 0.895856, or 89.59 %
+ 
+ 
+ ./darknet detector map data/logos.data cfg/yolov2-tiny-logos.cfg backup/yolov2-tiny-logos_15300.weights
+layer     filters    size              input                output
+   0 conv     16  3 x 3 / 1   416 x 416 x   3   ->   416 x 416 x  16 0.150 BF
+   1 max          2 x 2 / 2   416 x 416 x  16   ->   208 x 208 x  16 0.003 BF
+   2 conv     32  3 x 3 / 1   208 x 208 x  16   ->   208 x 208 x  32 0.399 BF
+   3 max          2 x 2 / 2   208 x 208 x  32   ->   104 x 104 x  32 0.001 BF
+   4 conv     64  3 x 3 / 1   104 x 104 x  32   ->   104 x 104 x  64 0.399 BF
+   5 max          2 x 2 / 2   104 x 104 x  64   ->    52 x  52 x  64 0.001 BF
+   6 conv    128  3 x 3 / 1    52 x  52 x  64   ->    52 x  52 x 128 0.399 BF
+   7 max          2 x 2 / 2    52 x  52 x 128   ->    26 x  26 x 128 0.000 BF
+   8 conv    256  3 x 3 / 1    26 x  26 x 128   ->    26 x  26 x 256 0.399 BF
+   9 max          2 x 2 / 2    26 x  26 x 256   ->    13 x  13 x 256 0.000 BF
+  10 conv    512  3 x 3 / 1    13 x  13 x 256   ->    13 x  13 x 512 0.399 BF
+  11 max          2 x 2 / 1    13 x  13 x 512   ->    13 x  13 x 512 0.000 BF
+  12 conv   1024  3 x 3 / 1    13 x  13 x 512   ->    13 x  13 x1024 1.595 BF
+  13 conv   1024  3 x 3 / 1    13 x  13 x1024   ->    13 x  13 x1024 3.190 BF
+  14 conv    160  1 x 1 / 1    13 x  13 x1024   ->    13 x  13 x 160 0.055 BF
+  15 detection
+mask_scale: Using default '1.000000'
+Total BFLOPS 6.989
+Loading weights from backup/yolov2-tiny-logos_15300.weights...
+.
+.
+.
+detections_count = 20717, unique_truth_count = 4536
+class_id = 0, name = Intel, 17   ap = 100.00 %
+class_id = 1, name = Texaco, 	 ap = 90.91 %
+class_id = 2, name = DHL, 	 ap = 90.91 %
+class_id = 3, name = Cocacola, 	 ap = 90.91 %
+class_id = 4, name = Citroen, 	 ap = 93.71 %
+class_id = 5, name = Yahoo, 	 ap = 90.91 %
+class_id = 6, name = Nike, 	 ap = 90.30 %
+class_id = 7, name = RedBull, 	 ap = 90.91 %
+class_id = 8, name = Ford, 	 ap = 90.70 %
+class_id = 9, name = Apple, 	 ap = 54.55 %
+class_id = 10, name = Puma, 	 ap = 90.91 %
+class_id = 11, name = Adidas, 	 ap = 90.91 %
+class_id = 12, name = HP, 	 ap = 90.39 %
+class_id = 13, name = Starbucks, 	 ap = 95.04 %
+class_id = 14, name = Google, 	 ap = 90.91 %
+class_id = 15, name = Unicef, 	 ap = 85.04 %
+class_id = 16, name = Ferrari, 	 ap = 99.67 %
+class_id = 17, name = Pepsi, 	 ap = 89.78 %
+class_id = 18, name = Porsche, 	 ap = 100.00 %
+class_id = 19, name = Vodafone, 	 ap = 66.35 %
+class_id = 20, name = Fedex, 	 ap = 90.91 %
+class_id = 21, name = BMW, 	 ap = 98.27 %
+class_id = 22, name = Heineken, 	 ap = 90.91 %
+class_id = 23, name = Nbc, 	 ap = 99.91 %
+class_id = 24, name = Sprite, 	 ap = 89.62 %
+class_id = 25, name = Mini, 	 ap = 90.91 %
+class_id = 26, name = McDonalds, 	 ap = 90.91 %
+ for thresh = 0.25, precision = 0.94, recall = 0.91, F1-score = 0.92
+ for thresh = 0.25, TP = 4129, FP = 280, FN = 407, average IoU = 77.84 %
+
+ mean average precision (mAP) = 0.901567, or 90.16 %
+Total Detection Time: 18.000000 Seconds
+````
+
+So, comparing all the 3 outputs, WE HAVE A WINNER ! As we can see above, the batch 11000 found more objects but got more of them wrong, while 15300 found less objects but is showing a better overall balance on indicators. Mainly F1-score, mAP, Recall and IOU. We also can see that Apple is a tricky logo, when comparing to the performance of the other ones. 
+
+## Converting our Winner into Tensorflow
 
 
-
-I'd recommend checking [AlexeyAB github](https://github.com/AlexeyAB/darknet#when-should-i-stop-training) for a detailed explanation of when to stop training.
 
