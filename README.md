@@ -729,7 +729,8 @@ Let's see how Darkflow is performing with those files and then run the conversio
 source deactivate
 source activate python3
 cd ~/darkflow
-python3 flow --imgdir ../darknet/data/logos/ --model ../darknet/cfg/yolov2-tiny-logos.cfg --load ../darknet/backup/yolov2-tiny-logos_15300.weights --labels ../darknet/data/logos.txt --gpu 1 --batch 256
+python3 flow --imgdir ../darknet/data/logos/ --model ../darknet/cfg/yolov2-tiny-logos.cfg 
+--load ../darknet/backup/yolov2-tiny-logos_15300.weights --labels ../darknet/data/logos.txt --gpu 1 --batch 256
 Parsing ../darknet/cfg/yolov2-tiny-logos.cfg
 Loading ../darknet/backup/yolov2-tiny-logos_15300.weights ...
 Successfully identified 63615060 bytes
@@ -766,12 +767,15 @@ Total time = 21.416011333465576s / 256 inps = 11.953673166018708 ips
 .
 ````
 Below some results from this run. It has missed some logos, specially Apple and Sprite, while found some blurred and hidden ones. Once Yolo focus is speed sometimes missing some detections is ok:    
-![results darkflow](images/sample01.png)
+![results darkflow](images/sample01.png)  
+
+High-res versions of these images can be seen in `inference_results`folder. 
 
 Once we have tested and checked that the model is workign as desired, we need to convert it first to Tensorflow to be able to move it to Raspberry Pi with Movidius. Let's run the command below and check the results under `~/darkflow/built_graph/`: 
 
-````bash
-python3 flow --model ../darknet/cfg/yolov2-tiny-logos.cfg --load ../darknet/backup/yolov2-tiny-logos_15300.weights --labels ../darknet/data/logos.txt --savepb
+````
+python3 flow --model ../darknet/cfg/yolov2-tiny-logos.cfg --load ../darknet/backup/yolov2-tiny-logos_15300.weights 
+--labels ../darknet/data/logos.txt --savepb
 
 /home/ubuntu/darkflow/darkflow/dark/darknet.py:54: UserWarning: ./cfg/yolov2-tiny-logos_15300.cfg not found, use ../darknet/cfg/yolov2-tiny-logos.cfg instead
   cfg_path, FLAGS.model))
