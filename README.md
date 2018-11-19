@@ -303,12 +303,14 @@ cp ~/flickr27/flickr_logos_27_dataset/logos.txt ~/darknet/data/logos.txt
 cp cfg/voc.data cfg/logos.data
 cp cfg/yolov2-tiny-voc.cfg cfg/yolov2-tiny-logos.cfg
 ````
-Edit the file `cfg/logos.data` to: 
+We copied our training data from `tmp/`structure to the `darknet/data/logos/`, generated a list os images for training and another one for testing and copied the file `.data` and template networking for Yolo V2 Tiny `.cfg` so we can adjust them. 
+
+Now, edit the file `cfg/logos.data` to: 
 ````bash
 classes= 27
-train  = ./data/train.txt
-valid  = ./data/test.txt
-names = ./data/logos.txt
+train  = data/train.txt
+valid  = data/test.txt
+names = data/logos.txt
 backup = backup
 ````
 This file basically will tell Darknet the number of classes (we still have to configure this on the network configuration file), the list of images for training and validation, the labels and where to backup the training checkpoints. 
@@ -341,7 +343,7 @@ Open the `cfg/yolov2-tiny-logos.cfg` in your edit and change the following lines
  .
 124 classes=27
 ````
-We commented lines 3 and 4 and changed lines 6 and 7 to allow training in larger batches suitable for the larger GPU in P3 instances. We also changed classes in line 124 to 27 and filters on line 118. Filters must be changed to the value defined by "(classes + 5) * 5"... in this case (27+5)*5=160. 
+We commented lines 3 and 4 and changed `lines 6 and 7` to allow training in larger batches suitable for the larger GPU in P3 instances. We also changed classes in `line 124` to 27 and filters on `line 118` to 160. Filters must be changed to the value defined by "(classes + 5) * 5"... in this case `(27+5)*5=160`. *In case you prefer to build your model with fewer classes, adjust it accordingly (i.e: 5 classes => filters = 50).*
 
 The final step is to extract from the pre-trained weights file the final layer with the detection, so we can add more classes on custom training, generating `yolov2-tiny-logos.conv.13`: 
 ````bash
@@ -361,11 +363,11 @@ layer     filters    size              input                output
    11 max          2 x 2 / 1    13 x  13 x 512   ->    13 x  13 x 512
    12 conv   1024  3 x 3 / 1    13 x  13 x 512   ->    13 x  13 x1024  1.595 BFLOPs
    13 conv   1024  3 x 3 / 1    13 x  13 x1024   ->    13 x  13 x1024  3.190 BFLOPs
-   14 conv    125  1 x 1 / 1    13 x  13 x1024   ->    13 x  13 x 125  0.043 BFLOPs
+   14 conv    160  1 x 1 / 1    13 x  13 x1024   ->    13 x  13 x 160  0.055 BFLOPs
    15 detection
 mask_scale: Using default '1.000000'
 Loading weights from yolov2-tiny-voc.weights...Done!
-Saving weights to yolov2-tiny-voc.conv.13
+Saving weights to yolov2-tiny-logos.conv.13
 ````
 
 ### Training with Custom Logos
@@ -441,23 +443,32 @@ Each iteration will present you with the current status of the deep learning, i.
 - The fifth number if the time for the whole iteration to complete
 - The sixth number is the total number of images analyzed so far
 
-Although you don't need to worry much about it at first (but it might be useful to fine tune your models in the future), during each iteration, you will see values like those below, with detailf of each train subdivion: 
+Although you don't need to worry much about it at first (but it might be useful to fine tune your models in the future), during each iteration, you will see values like those below, with detailf of each train subdivision: 
 ````bash
 Region Avg IOU: 0.336229, Class: 0.035944, Obj: 0.495486, No Obj: 0.456934, Avg Recall: 0.186047,  count: 43
 ````
-- Region Avg IOU: % Match between the objects detected and the objects being trained (see AlexeyAB github for a detailed explanation of IOU calculation)
+- Region Avg IOU: % Match between the objects detected and the objects being trained
 - Class: % Match of classes in pictures 
 - Obj: % Math of objects in pictures 
 - No Obj: % Match of amount of objects found
-- Avg REcall: Average REcall of the subdivision
+- Avg Recall: Average Recall of the subdivision
+
+Borrowing from AlexeyAB, here is a good graphical explanation of these values: 
+![Iou and recall](https://camo.githubusercontent.com/ffd00e8c7f54d4710edea3bb47e201c8bedab074/68747470733a2f2f6873746f2e6f72672f66696c65732f6361382f3836362f6437362f63613838363664373666623834303232383934306462663434326137663036612e6a7067)
+
 
 *So, when do I stop the training ?* 
+
 There is no right answer. Some rule of thumbs are: 
 - when avg loss stales betwwen many iterations (or grow)
 - when avg loss goes beyond 0.06
 - allow for at least 2000 iterations per class and 4000 iterations per class
 
-In this project, around 11000 iterations you should find yourself with a not perfect but useful model. 
+In this project, around 11000 iterations you should find yourself with useful model (although not perfect). 
+
+It might be tempting to think that running it for way longer might always give you better results. This may cause what is known as *overfitting*, that happens when the model is perfect for the testing data but it got so addicted to it that is not useful in other not seen before data. 
 
 
+
+I'd recommend checking [AlexeyAB github](https://github.com/AlexeyAB/darknet#when-should-i-stop-training) for a detailed explanation of when to stop training.
 
