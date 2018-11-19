@@ -58,15 +58,18 @@ SSH the newly created instance and activate the *python2* environment with `sour
 
 ### Installing Darknet
 
-Let's move to the next step, installing the required software to training the models. You can follow the guide directly from [Darknet website](https://pjreddie.com/darknet/install/) or cut directly to the steps here: 
+Let's move to the next step, installing the required software to training the models. You can follow the guide directly from [Darknet Fork from AlexeyAB](https://github.com/AlexeyAB/) or cut directly to the steps here: 
 ````bash
-git clone https://github.com/pjreddie/darknet.git
+git clone https://github.com/AlexeyAB/darknet.git
 cd darknet
 ````
 In order to have CUDA enabled we need to change the ````Makefile```` changing the following parameters from 0 to 1 
 ````
 GPU=1
 CUDNN=1
+CUDNN_HALF=1
+OPENCV=0
+AVX=0
 OPENMP=1
 ````
 Then compile it runing ````make````.  
@@ -223,11 +226,11 @@ Edit the file `~/darkflow/darkflow/utils/loader.py` and change `self.offset = 16
 
 For this project we will train the network to recognize Logos of 27 brands
 
-### Downloading and Preparing sample data 
+### Downloading and Preparing training data 
 
 In order to train the network we will use a Dataset gathered from Flickr named [Flickr Logos Dataset](http://image.ntua.gr/iva/datasets/flickr_logos/).  It contains 810 annotated images, corresponding to 27 logo classes/brands (30 images for each class). All images are annotated with bounding boxes of the logo instances in the image.
 
-So, let's move on an gather this data on a separate directory once it will need to be prepared before training: 
+So, let's move on and gather this data on a separate directory once it will need to be prepared before training: 
 ````bash
 source deactivate
 source activte python2
@@ -267,24 +270,205 @@ The file `flickr_logos_27_dataset_training_set_annotation.txt`  contains the mai
 
 Darknet uses a different file format for training where each picture `.jpg` has a file with the `.txt` extension containing in each line the ID for the class (integer) plus the object coordinates relative to the file size (top, left, width, height). 
 
-Instead of manually changing the format, you can use the script XPTO
+Instead of manually changing the format, you can use the provided script `convert_Flickr2Yolo.py` to convert the labels into Yolo format: 
+````bash
+cd ~/flickr27/flickr_logos_27_dataset/
+mkdir tmp
+python convert_Flickr2Yolo.py
+flickr_logos_27_dataset_images/144503924.jpg--->tmp/1_Adidas_144503924.jpg(tmp/1_Adidas_144503924.txt)
+flickr_logos_27_dataset_images/2451569770.jpg--->tmp/1_Adidas_2451569770.jpg(tmp/1_Adidas_2451569770.txt)
+flickr_logos_27_dataset_images/390321909.jpg--->tmp/1_Adidas_390321909.jpg(tmp/1_Adidas_390321909.txt)
+flickr_logos_27_dataset_images/4761260517.jpg--->tmp/1_Adidas_4761260517.jpg(tmp/1_Adidas_4761260517.txt)
+.
+.
+.
+flickr_logos_27_dataset_images/217288720.jpg--->tmp/6_Yahoo_217288720.jpg(tmp/6_Yahoo_217288720.txt)
+flickr_logos_27_dataset_images/2472817996.jpg--->tmp/6_Yahoo_2472817996.jpg(tmp/6_Yahoo_2472817996.txt)
+flickr_logos_27_dataset_images/2514220918.jpg--->tmp/6_Yahoo_2514220918.jpg(tmp/6_Yahoo_2514220918.txt)
+flickr_logos_27_dataset_images/386891249.jpg--->tmp/6_Yahoo_386891249.jpg(tmp/6_Yahoo_386891249.txt)
+=========== DONE
+CATEGORIES LIST for LABELS
+['Pepsi', 'Puma', 'Ferrari', 'Sprite', 'Ford', 'HP', 'Fedex', 'Starbucks', 'DHL', 'Google', 'Heineken', 'RedBull', 'Intel', 'Nike', 'Porsche', 'Adidas', 'McDonalds', 'Citroen', 'Texaco', 'Unicef', 'Yahoo', 'BMW', 'Nbc', 'Cocacola', 'Vodafone', 'Apple', 'Mini']
+`````
+The script has created the required files in `tmp/` directory. It also provides a `labels.txt` on the base directory that will be used in training and a *CATEGORIES LIST for LABELS* that will be required later on for the Inference, so take note of these values. 
+
+Next we need to copy the files and generate the required structure for training:
+````bash
+cd ~/darknet
+mkdir ~/darknet/data/logos/
+cp ~/flickr27/flickr_logos_27_dataset/tmp/*  ~/darknet/data/logos/
+ls data/logos/*jpg | grep -v 6_ > ~/darknet/data/train.txt
+ls data/logos/*jpg | grep  6_ > ~/darknet/data/test.txt
+cp ~/flickr27/flickr_logos_27_dataset/logos.txt ~/darknet/data/logos.txt
+cp cfg/voc.data cfg/logos.data
+cp cfg/yolov2-tiny-voc.cfg cfg/yolov2-tiny-logos.cfg
+````
+We copied our training data from `tmp/`structure to the `darknet/data/logos/`, generated a list os images for training and another one for testing and copied the file `.data` and template networking for Yolo V2 Tiny `.cfg` so we can adjust them. 
+
+Now, edit the file `cfg/logos.data` to: 
+````bash
+classes= 27
+train  = data/train.txt
+valid  = data/test.txt
+names = data/logos.txt
+backup = backup
+````
+This file basically will tell Darknet the number of classes (we still have to configure this on the network configuration file), the list of images for training and validation, the labels and where to backup the training checkpoints. 
+
+Ok ! So now we have the annotations in the correct format, the labels in the right place, a list of images for training (1_*.jpg thru 5_*.jpg), a list of images for validation (6_*.jpg), and a file containing all the paths we need. 
+
+The default network `.cfg` file is configured for 20 classes and testing. We need to change it to more classes and training. 
+
+Open the `cfg/yolov2-tiny-logos.cfg` in your edit and change the following lines to:
+
+````bash
+1 [net]
+2 # Testing
+3 #batch=1
+4 #subdivisions=1
+5 # Training
+6 batch=256
+7 subdivisions=8
+ .
+ .
+ .
+114 [convolutional]
+115 size=1
+116 stride=1
+117 pad=1
+118 filters=160
+119 activation=linear
+ . 
+ . 
+ .
+124 classes=27
+````
+We commented lines 3 and 4 and changed `lines 6 and 7` to allow training in larger batches suitable for the larger GPU in P3 instances. We also changed classes in `line 124` to 27 and filters on `line 118` to 160. Filters must be changed to the value defined by "(classes + 5) * 5"... in this case `(27+5)*5=160`. *In case you prefer to build your model with fewer classes, adjust it accordingly (i.e: 5 classes => filters = 50).*
+
+The final step is to extract from the pre-trained weights file the final layer with the detection, so we can add more classes on custom training, generating `yolov2-tiny-logos.conv.13`: 
+````bash
+./darknet partial cfg/yolov2-tiny-logos.cfg yolov2-tiny-voc.weights yolov2-tiny-logos.conv.13 13
+layer     filters    size              input                output
+    0 conv     16  3 x 3 / 1   416 x 416 x   3   ->   416 x 416 x  16  0.150 BFLOPs
+    1 max          2 x 2 / 2   416 x 416 x  16   ->   208 x 208 x  16
+    2 conv     32  3 x 3 / 1   208 x 208 x  16   ->   208 x 208 x  32  0.399 BFLOPs
+    3 max          2 x 2 / 2   208 x 208 x  32   ->   104 x 104 x  32
+    4 conv     64  3 x 3 / 1   104 x 104 x  32   ->   104 x 104 x  64  0.399 BFLOPs
+    5 max          2 x 2 / 2   104 x 104 x  64   ->    52 x  52 x  64
+    6 conv    128  3 x 3 / 1    52 x  52 x  64   ->    52 x  52 x 128  0.399 BFLOPs
+    7 max          2 x 2 / 2    52 x  52 x 128   ->    26 x  26 x 128
+    8 conv    256  3 x 3 / 1    26 x  26 x 128   ->    26 x  26 x 256  0.399 BFLOPs
+    9 max          2 x 2 / 2    26 x  26 x 256   ->    13 x  13 x 256
+   10 conv    512  3 x 3 / 1    13 x  13 x 256   ->    13 x  13 x 512  0.399 BFLOPs
+   11 max          2 x 2 / 1    13 x  13 x 512   ->    13 x  13 x 512
+   12 conv   1024  3 x 3 / 1    13 x  13 x 512   ->    13 x  13 x1024  1.595 BFLOPs
+   13 conv   1024  3 x 3 / 1    13 x  13 x1024   ->    13 x  13 x1024  3.190 BFLOPs
+   14 conv    160  1 x 1 / 1    13 x  13 x1024   ->    13 x  13 x 160  0.055 BFLOPs
+   15 detection
+mask_scale: Using default '1.000000'
+Loading weights from yolov2-tiny-voc.weights...Done!
+Saving weights to yolov2-tiny-logos.conv.13
+````
+
+### Training with Custom Logos
+
+Ok ! Finally ! Now the real fun begins (and, for some anxious people like me the worst part, that is watching the training go on and on for a couple of hours hoping for the algorithms to improve at each interation) ! 
+
+````bash
+./darknet detector train data/logos.data cfg/yolov2-tiny-logos.cfg yolov2-tiny-logos.conv.13
+yolov2-tiny-logos
+layer     filters    size              input                output
+   0 conv     16  3 x 3 / 1   416 x 416 x   3   ->   416 x 416 x  16 0.150 BF
+   1 max          2 x 2 / 2   416 x 416 x  16   ->   208 x 208 x  16 0.003 BF
+   2 conv     32  3 x 3 / 1   208 x 208 x  16   ->   208 x 208 x  32 0.399 BF
+   3 max          2 x 2 / 2   208 x 208 x  32   ->   104 x 104 x  32 0.001 BF
+   4 conv     64  3 x 3 / 1   104 x 104 x  32   ->   104 x 104 x  64 0.399 BF
+   5 max          2 x 2 / 2   104 x 104 x  64   ->    52 x  52 x  64 0.001 BF
+   6 conv    128  3 x 3 / 1    52 x  52 x  64   ->    52 x  52 x 128 0.399 BF
+   7 max          2 x 2 / 2    52 x  52 x 128   ->    26 x  26 x 128 0.000 BF
+   8 conv    256  3 x 3 / 1    26 x  26 x 128   ->    26 x  26 x 256 0.399 BF
+   9 max          2 x 2 / 2    26 x  26 x 256   ->    13 x  13 x 256 0.000 BF
+  10 conv    512  3 x 3 / 1    13 x  13 x 256   ->    13 x  13 x 512 0.399 BF
+  11 max          2 x 2 / 1    13 x  13 x 512   ->    13 x  13 x 512 0.000 BF
+  12 conv   1024  3 x 3 / 1    13 x  13 x 512   ->    13 x  13 x1024 1.595 BF
+  13 conv   1024  3 x 3 / 1    13 x  13 x1024   ->    13 x  13 x1024 3.190 BF
+  14 conv    160  1 x 1 / 1    13 x  13 x1024   ->    13 x  13 x 160 0.055 BF
+  15 detection
+mask_scale: Using default '1.000000'
+Total BFLOPS 6.989
+Loading weights from yolov2-tiny-logos.conv.13...
+ seen 64
+Done!
+Learning Rate: 0.001, Momentum: 0.9, Decay: 0.0005
+Resizing
+512 x 512
+ try to allocate workspace = 168165958 * sizeof(float),  CUDA allocate done!
+Loaded: 0.000047 seconds
+Region Avg IOU: 0.237901, Class: 0.042992, Obj: 0.569356, No Obj: 0.550839, Avg Recall: 0.074627,  count: 67
+Region Avg IOU: 0.200431, Class: 0.045643, Obj: 0.569926, No Obj: 0.550581, Avg Recall: 0.051020,  count: 98
+Region Avg IOU: 0.270504, Class: 0.034779, Obj: 0.590877, No Obj: 0.550647, Avg Recall: 0.083333,  count: 36
+Region Avg IOU: 0.240480, Class: 0.048247, Obj: 0.566323, No Obj: 0.551093, Avg Recall: 0.121739,  count: 115
+Region Avg IOU: 0.312113, Class: 0.032807, Obj: 0.603046, No Obj: 0.550173, Avg Recall: 0.257143,  count: 35
+Region Avg IOU: 0.337527, Class: 0.047015, Obj: 0.625224, No Obj: 0.550526, Avg Recall: 0.226415,  count: 53
+Region Avg IOU: 0.215338, Class: 0.040308, Obj: 0.546044, No Obj: 0.551285, Avg Recall: 0.066667,  count: 60
+Region Avg IOU: 0.327286, Class: 0.030411, Obj: 0.561637, No Obj: 0.551706, Avg Recall: 0.166667,  count: 42
+
+ 1: 27.552214, 27.552214 avg loss, 0.000100 rate, 1.892316 seconds, 256 images
+Loaded: 0.000049 seconds
+Region Avg IOU: 0.329077, Class: 0.037939, Obj: 0.435169, No Obj: 0.455989, Avg Recall: 0.190476,  count: 42
+Region Avg IOU: 0.317284, Class: 0.043579, Obj: 0.503651, No Obj: 0.456496, Avg Recall: 0.180328,  count: 61
+Region Avg IOU: 0.279336, Class: 0.042566, Obj: 0.444955, No Obj: 0.456567, Avg Recall: 0.180328,  count: 61
+Region Avg IOU: 0.336229, Class: 0.035944, Obj: 0.495486, No Obj: 0.456934, Avg Recall: 0.186047,  count: 43
+Region Avg IOU: 0.330333, Class: 0.038069, Obj: 0.453229, No Obj: 0.456721, Avg Recall: 0.187500,  count: 80
+Region Avg IOU: 0.334488, Class: 0.035607, Obj: 0.507740, No Obj: 0.457076, Avg Recall: 0.176471,  count: 34
+Region Avg IOU: 0.385838, Class: 0.032720, Obj: 0.454051, No Obj: 0.456297, Avg Recall: 0.228571,  count: 35
+Region Avg IOU: 0.295446, Class: 0.031492, Obj: 0.463530, No Obj: 0.456919, Avg Recall: 0.152174,  count: 46
+
+ 2: 20.320900, 26.829082 avg loss, 0.000100 rate, 1.773403 seconds, 512 images
+Loaded: 0.000061 seconds
+````
+
+### What is going on during training ? 
+
+This training is going to run for a couple of hours at least, so if you prefer you can start the command above with `nohup` to avoid losing the process in case connection drops. 
+
+Each iteration will present you with the current status of the deep learning, i.e.: 
+````bash
+ 2: 20.320900, 26.829082 avg loss, 0.000100 rate, 1.773403 seconds, 512 images
+````
+- The first number is the iteration, it will only grow and this is the number that will be refered to in the backup files. 
+- The second number is the loss of the current iteration
+- The third number is the loss average for all the iterations, this is going to be main metric we will follow
+- The fourth number is the learning rate of the algorithm, governed by the steps and scale paraemters in `.cfg` file 
+- The fifth number if the time for the whole iteration to complete
+- The sixth number is the total number of images analyzed so far
+
+Although you don't need to worry much about it at first (but it might be useful to fine tune your models in the future), during each iteration, you will see values like those below, with detailf of each train subdivision: 
+````bash
+Region Avg IOU: 0.336229, Class: 0.035944, Obj: 0.495486, No Obj: 0.456934, Avg Recall: 0.186047,  count: 43
+````
+- Region Avg IOU: % Match between the objects detected and the objects being trained
+- Class: % Match of classes in pictures 
+- Obj: % Math of objects in pictures 
+- No Obj: % Match of amount of objects found
+- Avg Recall: Average Recall of the subdivision
+
+Borrowing from AlexeyAB, here is a good graphical explanation of these values: 
+![Iou and recall](https://camo.githubusercontent.com/ffd00e8c7f54d4710edea3bb47e201c8bedab074/68747470733a2f2f6873746f2e6f72672f66696c65732f6361382f3836362f6437362f63613838363664373666623834303232383934306462663434326137663036612e6a7067)
+
+
+*So, when do I stop the training ?* 
+
+There is no right answer. Some rule of thumbs are: 
+- when avg loss stales betwwen many iterations (or grow)
+- when avg loss goes beyond 0.06
+- allow for at least 2000 iterations per class and 4000 iterations per class
+
+In this project, around 11000 iterations you should find yourself with useful model (although not perfect). 
+
+It might be tempting to think that running it for way longer might always give you better results. This may cause what is known as *overfitting*, that happens when the model is perfect for the testing data but it got so addicted to it that is not useful in other not seen before data. 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+I'd recommend checking [AlexeyAB github](https://github.com/AlexeyAB/darknet#when-should-i-stop-training) for a detailed explanation of when to stop training.
 
