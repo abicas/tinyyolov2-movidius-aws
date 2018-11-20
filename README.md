@@ -839,6 +839,8 @@ drwxrwxr-x 12 ubuntu ubuntu     4096 Nov 17 20:27 ..
 ````
 That is all we needed the EC2 instance for. Download those two files or copy them directly to Raspberry Pi and we resume from there. 
 
+If you want to save some money, that would be a good time to shutdown your instance. 
+
 **In case you need to skip some steps, I will include most of the generated files in the `support` folder** 
 
 ## 
