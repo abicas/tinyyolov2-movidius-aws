@@ -4,21 +4,21 @@ Custom training Object Detection on Tiny-YoloV2 on AWS and then transfering the 
 Table of Contents
 =================
 
-      * [Introduction](#introduction)
-      * [Requirements](#requirements)
-         * [Training Environment](#training-environment)
-         * [Edge Device](#edge-device)
-      * [Setting things up for Training](#setting-things-up-for-training)
-         * [Preparing the Training Instance](#preparing-the-training-instance)
-         * [Installing Darknet](#installing-darknet)
-         * [Testing Darknet with Tiny YOLO v2](#testing-darknet-with-tiny-yolo-v2)
-         * [Installing Darkflow](#installing-darkflow)
-      * [Custom Training Tiny Yolo v2](#custom-training-tiny-yolo-v2)
-         * [Downloading and Preparing training data](#downloading-and-preparing-training-data)
-         * [Training with Custom Logos](#training-with-custom-logos)
-         * [What is going on during training ?](#what-is-going-on-during-training-)
-         * [So, when do I stop the training ?](#so-when-do-i-stop-the-training-)
-      * [Converting our Winner Model into Tensorflow with Darkflow](#converting-our-winner-model-into-tensorflow-with-darkflow)
+ * [Introduction](#introduction)
+ * [Requirements](#requirements)
+    * [Training Environment](#training-environment)
+    * [Edge Device](#edge-device)
+ * [Setting things up for Training](#setting-things-up-for-training)
+    * [Preparing the Training Instance](#preparing-the-training-instance)
+    * [Installing Darknet](#installing-darknet)
+    * [Testing Darknet with Tiny YOLO v2](#testing-darknet-with-tiny-yolo-v2)
+    * [Installing Darkflow](#installing-darkflow)
+ * [Custom Training Tiny Yolo v2](#custom-training-tiny-yolo-v2)
+    * [Downloading and Preparing training data](#downloading-and-preparing-training-data)
+    * [Training with Custom Logos](#training-with-custom-logos)
+    * [What is going on during training ?](#what-is-going-on-during-training-)
+    * [So, when do I stop the training ?](#so-when-do-i-stop-the-training-)
+ * [Converting our Winner Model into Tensorflow with Darkflow](#converting-our-winner-model-into-tensorflow-with-darkflow)
 
 ## Introduction
 
