@@ -79,6 +79,7 @@ SSH the newly created instance and activate the *python2* environment with `sour
 
 Let's move to the next step, installing the required software to training the models. You can follow the guide directly from [Darknet Fork from AlexeyAB](https://github.com/AlexeyAB/) or cut directly to the steps here: 
 ````bash
+source activate python2
 git clone https://github.com/AlexeyAB/darknet.git
 cd darknet
 ````
