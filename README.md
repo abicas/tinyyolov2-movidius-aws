@@ -4,7 +4,6 @@ Custom training Object Detection on Tiny-YoloV2 on AWS and then transfering the 
 Table of Contents
 =================
 
-   * [Tiny Yolo V2 ported to run on Edge Devices powered by Movidius, running on AWS](#tiny-yolo-v2-ported-to-run-on-edge-devices-powered-by-movidius-running-on-aws)
       * [Introduction](#introduction)
       * [Requirements](#requirements)
          * [Training Environment](#training-environment)
