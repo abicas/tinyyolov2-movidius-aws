@@ -1,5 +1,5 @@
-# Tiny Yolo V2 ported to run on Edge Devices powered by Movidius, running on AWS 
-Custom training Object Detection on Tiny-YoloV2 on AWS and then transfering the model to Movidius to perform accelerated inference on  edge devices
+# Tiny Yolo V2 ported to run on Edge Devices powered by Intel Movidius, running on AWS 
+Custom training Object Detection on Tiny-YoloV2 running on AWS, and then transfering the model to Movidius to perform accelerated inference on edge devices
 
 Table of Contents
 =================
@@ -22,19 +22,19 @@ Table of Contents
 
 ## Introduction
 
-When you have Deep Learning models running on edge devices sending all the data to cloud services once these devices are not powerful enough to do the whole processing. Intel has created a small device called <a href="https://www.movidius.com/"> Movidius </a> that can act as an accelerator for edge devices like a Raspberry Pi.
+Intel has created a small device called <a href="https://www.movidius.com/"> Movidius </a> that can act as an accelerator for edge devices like a Raspberry Pi. This way, if you have Deep Learning models running on edge devices that are not powerful enough, you don't necessarily need to send all the data to cloud services for processing, thus reducing costs and increasing flexibility for certain conditions like low bandwitdh or no connection at all.
 
-Of course there are several limitations regarding the size of the model and specifically the supported operations, layers and networks that it can run. The <a href="https://movidius.github.io/ncsdk/release_notes.html"> Movidius SDK Release Notes </a> denotes some of these limitations.  
+Of course there are several limitations regarding the size of the model and specifically the supported operations, layers and networks that it can run. The <a href="https://movidius.github.io/ncsdk/release_notes.html"> Intel Movidius SDK Release Notes </a> denotes some of these limitations.  
 
-One network that I found to be really handy for object detection and that can be converted to run on a Raspberry Pi with Movidus is <a href="https://pjreddie.com/darknet/yolo/"> Tiny Yolo v2 </a> once it is fast to train, transfer learning does not create additional layers and it can pass thru the <a href="https://github.com/thtrieu/darkflow"> Darkflow  </a> transformations required to go from Yolo to Tensorflow and then to Movidius format. 
+One network that I found to be really handy for object detection and that can be converted to run on a Raspberry Pi with Movidus is <a href="https://pjreddie.com/darknet/yolo/"> Tiny Yolo v2 </a> once it is fast to train, transfer learning does not create additional layers and it can pass through the <a href="https://github.com/thtrieu/darkflow"> Darkflow  </a> transformations required to go from Yolo to Tensorflow and then to Movidius format. 
 
 ## Requirements
 
-For this project there will be two environments: Training and Edge Ddevice
+For this project there will be two environments: Training and Edge Device
 
 ### Training Environment 
 For this environment we will be using a server with an Nvidia GPU for training. 
-I would recommend an AWS EC2 p3.2xlarge instance that contains a single V100 GPU making it simpler to train than multiple GPUs and still affordable enough for this project (as of writing around $3/hour). 
+I would recommend an AWS EC2 p3.2xlarge instance that contains a single V100 GPU, making it simpler to train than multiple GPUs and still affordable enough for this project (as of writing around $3/hour). 
 
 * AWS EC2 p3.2xlarge instance 
 * AWS Deep Learning AMI (Deep Learning AMI (Ubuntu) Version 18.0 - ami-0484cefb8f48dafe8) 
@@ -43,29 +43,29 @@ I would recommend an AWS EC2 p3.2xlarge instance that contains a single V100 GPU
 * [Darkflow](https://github.com/thtrieu/darkflow) to help transform Yolo model into Tensorflow
 
 ### Edge Device 
-The idea behind this project is to allow for low cost devicdes to perform near real time inference. ALthough it would be possible to run the models entirely on low power CPU, if we need something near real time we will need to boost its processing capacity with an accelerator. 
+The idea behind this project is to allow for low cost devices to perform near real time inference. Although it would be possible to run the models entirely on low power CPU, if we need something near real time we will need to boost its processing capacity with an accelerator. 
 
 * Raspberry Pi 3B+ 
 * 16GB card 
 * Raspbian 
 * USB Webcam 
-* [Movidius USB Stick](https://www.movidius.com/) for accelerated
+* [Movidius USB Stick](https://www.movidius.com/) for accelerated inferences
 
 ## Setting things up for Training
 
 ### Preparing the Training Instance 
 
-In this section we will install and prepare the EC2 instance to run our training jobs. We will not go thru every step of the instance creation, assuming you already have an AWS account and knows how to deploy and properly configure an instance for SSH access. 
+In this section we will install and prepare the EC2 instance to run our training jobs. We will not go through every step of the instance creation, assuming you already have an AWS account and knows how to deploy and properly configure an instance for SSH access. 
 
-We have provided a [Cloudformation script](create_training_instance_us-east-1.yaml) to create the instance but if you want do customized it or deploy in another region than US-EAST-1, the main steps you have to watch for while creating the server are described below: 
+We have provided a [Cloudformation script](create_training_instance_us-east-1.yaml) to create the instance but if you want do customize it or deploy it in another region than US-EAST-1, the main steps you have to watch for while creating the server are described below: 
 
-We will use the *Deep Learning AMI (Ubuntu) Version 18.0 - ami-0484cefb8f48dafe8* to create our instance (there can be a new version of the AMI when you deploy your instance once they get updated quite frequently, but it shouldn't be an issue for the project in case you decide to use a newwer one):
+We will use the *Deep Learning AMI (Ubuntu) Version 18.0 - ami-0484cefb8f48dafe8* to create our instance (there can be a new version of the AMI when you deploy your instance once they get updated quite frequently, but it shouldn't be an issue for the project in case you decide to use a newer one):
 ![EC2 AMI](images/ami1.png)
 
 In order to choose an instance with GPU support, choose p3.2xlarge as the instance type (as the time of writing this instance will cost you around $3 per active hour plus the storage space):
 ![EC2 instance](images/ami2.png)
 
-Also, if you need to access it thru SSH externally you can assign a Public IP to it
+Also, if you need to access it through SSH externally you can assign a Public IP to it
 ![EC2 Public IP](images/ami3.png)
 
 Accepting the other defaults should be alright for the project. 
@@ -77,7 +77,7 @@ SSH the newly created instance and activate the *python2* environment with `sour
 
 ### Installing Darknet
 
-Let's move to the next step, installing the required software to training the models. You can follow the guide directly from [Darknet Fork from AlexeyAB](https://github.com/AlexeyAB/) or cut directly to the steps here: 
+Let's move to the next step, installing the required software to training the models. You can follow the guide directly from [Darknet Fork from AlexeyAB](https://github.com/AlexeyAB/) or jump directly to the steps here: 
 ````bash
 source activate python2
 git clone https://github.com/AlexeyAB/darknet.git
@@ -94,13 +94,13 @@ OPENMP=1
 ````
 Then compile it runing ````make````.  
 
-If everything goes fine, you have an executable in your working dir. Let's test it ! 
+If everything goes fine, you have an executable in your working dir. Let's test it! 
 ![test run](images/darknet1.png)  
 The message shows it has compiled correctly. 
 
 ### Testing Darknet with Tiny YOLO v2
 
-In order to run our test, we need to download a pre-trained weights file. There are several files available. We will be using Tiny Yolo v2 due to its speed and size, small enough to be converted to Movidius and loaded into a raspberry pi memory later on (although less accurate). 
+In order to run our test, we need to download a pre-trained weights file. There are several files available. We will be using Tiny Yolo v2 due to its speed and size, small enough to be converted to Movidius and loaded into a Raspberry Pi memory later on (although less accurate). 
 
 Let's download a pre-trained model of TinyYoloV2 trained on VOC data and run it agains a dog picture
 
@@ -134,13 +134,13 @@ car: 55%
 car: 51%
 ````
 ![dog](https://github.com/pjreddie/darknet/blob/master/data/dog.jpg)   
-Neat right ? It was able to spot the dog if 78% certainty in 0.002 seconds (and the car in the background as well)! But this is running on a big server, with a NVIDIA V100 GPU, running a pretty known and optimized model... there will be some hard work ahead in order to customize this to our data and run it on less powerfull devices. But we will make it ! 
+Neat right? It was able to spot the dog with 78% certainty in 0.002 seconds (and the car in the background as well)! But this is running on a big server, with a NVIDIA V100 GPU, running a pretty known and optimized model... there will be some hard work ahead in order to customize this to our data and run it on less powerfull devices. But we will make it! 
 
 ### Installing Darkflow 
 
-Movidius devices can only compile deep learning models in Caffe or Tensorflow. So we need to convert the darknet to Tensorflow so it can be converted later on to Movidius. This convertion to Tensorflow will be done my [Darkflow](https://github.com/thtrieu/darkflow). 
+Movidius devices can only compile deep learning models in Caffe or Tensorflow. So we need to convert the darknet to Tensorflow so it can be converted later on to Movidius. This convertion to Tensorflow will be done with [Darkflow](https://github.com/thtrieu/darkflow). 
 
-But why don't you do the training already on Tensroflow them? Well, based on my experiences, Movidius supports quite a limited subset of operators of Tensorflow and doing transfer learning on existing models to my classes wasn't generating models capable of being converted. The [release notes from Movidius](https://movidius.github.io/ncsdk/release_notes.html) are always changing, so I would recommend checking back to see if it is supporting your required operators. DArknet on the other hand is a network that can be converted without incurring in these issues through the use of Darkflow. 
+But why don't you do the training already on Tensroflow then? Well, based on my experience, Movidius supports quite a limited subset of operators of Tensorflow and doing transfer learning on existing models to my classes wasn't generating models capable of being converted. The [release notes from Movidius](https://movidius.github.io/ncsdk/release_notes.html) are always changing, so I would recommend checking back to see if it is supporting your required operators. Darknet on the other hand is a network that can be converted without incurring on these issues through the use of Darkflow. 
 
 Darkflow runs on Python3, so lets switch environments and download the code: 
 `````bash
@@ -157,7 +157,7 @@ pip install opencv-python
 pip install -e .
 ````
 Lets test darkflow install. 
-First lets use our existing darkflow model and run it thru the pictures on `sample_img` dir, using the pre-trained models we downloaded previously:
+First lets use our existing darkflow model and run it against the pictures on `sample_img` dir, using the pre-trained models we downloaded previously:
 ````bash
 ## Run the model and generate an output image in ~/darkflow/sample_img/out/
 python3 flow --imgdir sample_img/ --model ../darknet/cfg/yolov2-tiny-voc.cfg --load ../darknet/yolov2-tiny-voc.weights  --labels ../darknet/data/voc.names
@@ -248,20 +248,18 @@ For this project we will train the network to recognize Logos of 27 brands
 
 ### Downloading and Preparing training data 
 
-In order to train the network we will use a Dataset gathered from Flickr named [Flickr Logos Dataset](http://image.ntua.gr/iva/datasets/flickr_logos/).  It contains 810 annotated images, corresponding to 27 logo classes/brands (30 images for each class). All images are annotated with bounding boxes of the logo instances in the image.
+In order to train the network we will use a Dataset gathered from Flickr named [Flickr Logos Dataset](http://image.ntua.gr/iva/datasets/flickr_logos/). It contains 810 annotated images, corresponding to 27 logo classes/brands (30 images for each class). All images are annotated with bounding boxes of the logo instances in the image.
 
 So, let's move on and gather this data on a separate directory once it will need to be prepared before training: 
 ````bash
 source deactivate
-source activte python2
+source activate python2
 mkdir ~/flickr27
 cd ~/flickr27
 wget http://image.ntua.gr/iva/datasets/flickr_logos/flickr_logos_27_dataset.tar.gz
-gunzip flickr_logos_27_dataset.tar.gz
-tar -xvf flickr_logos_27_dataset.tar
+tar -xvzf flickr_logos_27_dataset.tar.gz
 cd flickr_logos_27_dataset/
-gunzip flickr_logos_27_dataset_images.tar.gz
-tar -xvf flickr_logos_27_dataset_images.tar.gz
+tar -xvzf flickr_logos_27_dataset_images.tar.gz
 
 ls -la
 total 102592
@@ -285,10 +283,10 @@ head -n 10 flickr_logos_27_dataset_training_set_annotation.txt
 4763210295.jpg Adidas 1 285 61 317 79
 4763210295.jpg Adidas 1 285 298 324 329
 ````
-You will notice we have a directory with all the images and 3 txt files. 
-The file `flickr_logos_27_dataset_training_set_annotation.txt`  contains the main info we need for training: Picture, Class, Subset, Top, Left, Bottom, Right in pixels for the objects. A file can have more than on object like `4763210295.jpg` in the example above with many lines poiting to the same file. 
+You will notice that we have a directory with all the images and 3 `.txt` files. 
+The file `flickr_logos_27_dataset_training_set_annotation.txt`  contains the main info we need for training: Picture, Class, Subset, Top, Left, Bottom, Right in pixels for the objects. A file can have more than on object like `4763210295.jpg` in the example above with many lines pointing to the same file. 
 
-Darknet uses a different file format for training where each picture `.jpg` has a file with the `.txt` extension containing in each line the ID for the class (integer) plus the object coordinates relative to the file size (top, left, width, height). 
+Darknet uses a different file format for training where each picture `.jpg` has a file with the `.txt` extension containing on each line the ID for the class (integer) plus the object coordinates relative to the file size (top, left, width, height). 
 
 Instead of manually changing the format, you can use the provided script `convert_Flickr2Yolo.py` to convert the labels into Yolo format: 
 ````bash
@@ -319,7 +317,7 @@ mkdir ~/darknet/data/logos/
 cp ~/flickr27/flickr_logos_27_dataset/tmp/*  ~/darknet/data/logos/
 ls data/logos/*jpg | grep -v 6_ > ~/darknet/data/train.txt
 ls data/logos/*jpg | grep  6_ > ~/darknet/data/test.txt
-cp ~/flickr27/flickr_logos_27_dataset/logos.txt ~/darknet/data/logos.txt
+cp ~/flickr27/flickr_logos_27_dataset/labels.txt ~/darknet/data/logos.txt
 cp cfg/voc.data cfg/logos.data
 cp cfg/yolov2-tiny-voc.cfg cfg/yolov2-tiny-logos.cfg
 ````
@@ -335,7 +333,7 @@ backup = backup
 ````
 This file basically will tell Darknet the number of classes (we still have to configure this on the network configuration file), the list of images for training and validation, the labels and where to backup the training checkpoints. 
 
-Ok ! So now we have the annotations in the correct format, the labels in the right place, a list of images for training (1_*.jpg thru 5_*.jpg), a list of images for validation (6_*.jpg), and a file containing all the paths we need. 
+Ok! So now we have the annotations in the correct format, the labels in the right place, a list of images for training (1_*.jpg thru 5_*.jpg), a list of images for validation (6_*.jpg), and a file containing all the paths we need. 
 
 The default network `.cfg` file is configured for 20 classes and testing. We need to change it to more classes and training. 
 
@@ -392,10 +390,10 @@ Saving weights to yolov2-tiny-logos.conv.13
 
 ### Training with Custom Logos
 
-Ok ! Finally ! Now the real fun begins (and, for some anxious people like me the worst part, that is watching the training go on and on for a couple of hours hoping for the algorithms to improve at each interation) ! 
+Ok! Finally! Now the real fun begins (and, for some anxious people like me the worst part, that is watching the training go on and on for a couple of hours hoping for the algorithms to improve at each interation)! 
 
 ````bash
-./darknet detector train data/logos.data cfg/yolov2-tiny-logos.cfg yolov2-tiny-logos.conv.13
+./darknet detector train cfg/logos.data cfg/yolov2-tiny-logos.cfg yolov2-tiny-logos.conv.13
 yolov2-tiny-logos
 layer     filters    size              input                output
    0 conv     16  3 x 3 / 1   416 x 416 x   3   ->   416 x 416 x  16 0.150 BF
@@ -448,7 +446,7 @@ Region Avg IOU: 0.295446, Class: 0.031492, Obj: 0.463530, No Obj: 0.456919, Avg 
 Loaded: 0.000061 seconds
 ````
 
-### What is going on during training ? 
+### What is going on during training? 
 
 This training is going to run for a couple of hours at least, so if you prefer you can start the command above with `nohup` to avoid losing the process in case connection drops. 
 
@@ -458,12 +456,12 @@ Each batch will present you with the current status of the deep learning, i.e.:
 ````
 - The first number is the batch, it will only grow and this is the number that will be refered to in the backup files. 
 - The second number is the loss of the current batch
-- The third number is the loss average for all the batches, this is going to be main metric we will follow
-- The fourth number is the learning rate of the algorithm, governed by the steps and scale paraemters in `.cfg` file 
-- The fifth number if the time for the whole batch to complete
+- The third number is the loss average for all the batches, this is going to be the main metric we will follow
+- The fourth number is the learning rate of the algorithm, governed by the steps and scale parameters in `.cfg` file 
+- The fifth number is the time for the whole batch to complete
 - The sixth number is the total number of images analyzed so far
 
-Although you don't need to worry much about it at first (but it might be useful to help select the best `.weights` file and fine tune your models in the future), during each batch, you will see values like those below, with detailf of each train subdivision: 
+Although you don't need to worry much about it at first (but it might be useful to help select the best `.weights` file and fine tune your models in the future), during each batch, you will see values like those below, with details of each train subdivision: 
 ````bash
 Region Avg IOU: 0.336229, Class: 0.035944, Obj: 0.495486, No Obj: 0.456934, Avg Recall: 0.186047,  count: 43
 ````
@@ -478,9 +476,9 @@ Borrowing from AlexeyAB, here is a good graphical explanation of these values:
 
 Also, as a reference, [Rafael Padilla's Github](https://github.com/rafaelpadilla/darknet/blob/master/README.md#faq_yolo) has a great FAQ on those outputs. 
 
-*If you think you need to change parameters during training, like scale and steps, drknet allows you to stop training and resume from the last checkpoint. Simply stop the training, change the config file, and restart darknet pointing to the latest checkpoint in the backup/ folder and it will resume from there.* 
+*If you think you need to change parameters during training, like scale and steps, darknet allows you to stop training and resume from the last checkpoint. Simply stop the training, change the config file, and restart darknet pointing to the latest checkpoint in the backup/ folder and it will resume from there.* 
 
-### So, when do I stop the training ?
+### So, when do I stop the training?
 
 There is no right answer. Some rule of thumbs are: 
 - when avg loss stales between many batches (or grow)
@@ -489,24 +487,24 @@ There is no right answer. Some rule of thumbs are:
 
 It might be tempting to think that running it for way longer might always give you better results. This may cause what is known as *overfitting*, that happens when the model is perfect for the testing data but it got so addicted to it that is not useful in other not seen before data. Sadly there is no magic in telling you when to stop training and when enough is enough. I'd recommend checking [AlexeyAB github](https://github.com/AlexeyAB/darknet#when-should-i-stop-training) if you want to know more about when to stop training.
 
-On my training (and it may vary A LOT), around 10000-12000 batches you should give us an useful model (although not perfect). As you can see on my training results below, around this range we achieved our minimals for loss and average loss. 
+On my training (and it may vary A LOT), around 10000-12000 batches should give us an useful model (although not perfect). As you can see on my training results below, around this range we achieved our minimals for loss and average loss. 
 
 ![Learning Curve](images/loss_batch_train.jpg) 
 
-You will notice that darknet saves a checkpoint file at `backup/` folder at every 100 batches. **Which of the weights file should I pick?**    
+You will notice that darknet saves a checkpoint file at `backup/` folder at every 100 batches. **Which one of the weights file should I pick?**    
 
 ![backup weights](images/backup_weights.png)    
 
 We tend to think that the last one is the best one, but it is a good practice testing before deciding which one to pick. 
-I decided to let the training run for a little bit longer and around 15000 batches it started  showing some better results: 
+I decided to let the training run for a little bit longer and around 15000 batches it started showing some better results: 
 ````bash
 11000: 0.051831, 0.085730 avg loss, 0.001000 rate, 0.886196 seconds, 2816000 images
 15000: 0.055898, 0.075187 avg loss, 0.001000 rate, 0.768312 seconds, 3840000 images
 15300: 0.053958, 0.071382 avg loss, 0.001000 rate, 1.472932 seconds, 3916800 images
 ````
-So, which one should I pick ? They all seems good, right ? 
+So, which one should I pick? They all seem good, right? 
 
-First, lets check the subdivision values for each one: 
+First, let's check the subdivision values for each one: 
 ````bash 
 Region Avg IOU: 0.769597, Class: 0.997826, Obj: 0.720678, No Obj: 0.008424, Avg Recall: 0.898305,  count: 59
 Region Avg IOU: 0.831775, Class: 0.998854, Obj: 0.629594, No Obj: 0.006677, Avg Recall: 1.000000,  count: 37
@@ -544,9 +542,9 @@ Based on this analysis:
 - Batch 15300 showed better numbers regarding True Positives (Obj metric)
 - Batch 15300 showed also a better Recall 
 
-Ok, so it seems we have a candidate. One things is a good performance with a subset of images, another thing is doing well for all of them. Let's put it to the test on all the images we used to train and validate to see how it would behave
+Ok, so it seems we have a candidate. One thing is a good performance with a subset of images, another thing is doing well for all of them. Let's put it to the test on all the images we used to train and validate to see how it would behave
 
-Let's create a single `data/all.txt` file with all the images and them run the models against these set to see the results. 
+Let's create a single `data/all.txt` file with all the images and then run the models against these set to see the results. 
 
 ````bash
 cd ~/darknet
@@ -563,9 +561,9 @@ names = data/logos.txt
 backup = backup
 `````
 
-And now we run darknet against all the images using all the three weights we selected: 
+And now we run darknet against all the images using three weights we selected from all of the ones generated: 
 ````bash
-./darknet detector map data/logos.data cfg/yolov2-tiny-logos.cfg backup/yolov2-tiny-logos_11000.weights
+./darknet detector map cfg/logos.data cfg/yolov2-tiny-logos.cfg backup/yolov2-tiny-logos_11000.weights
 layer     filters    size              input                output
    0 conv     16  3 x 3 / 1   416 x 416 x   3   ->   416 x 416 x  16 0.150 BF
    1 max          2 x 2 / 2   416 x 416 x  16   ->   208 x 208 x  16 0.003 BF
@@ -623,7 +621,7 @@ class_id = 26, name = McDonalds, 	 ap = 90.00 %
  mean average precision (mAP) = 0.883629, or 88.36 %
 Total Detection Time: 18.000000 Seconds
 
-./darknet detector map data/logos.data cfg/yolov2-tiny-logos.cfg backup/yolov2-tiny-logos_15000.weights
+./darknet detector map cfg/logos.data cfg/yolov2-tiny-logos.cfg backup/yolov2-tiny-logos_15000.weights
 layer     filters    size              input                output
    0 conv     16  3 x 3 / 1   416 x 416 x   3   ->   416 x 416 x  16 0.150 BF
    1 max          2 x 2 / 2   416 x 416 x  16   ->   208 x 208 x  16 0.003 BF
@@ -681,7 +679,7 @@ class_id = 26, name = McDonalds, 	 ap = 88.18 %
  mean average precision (mAP) = 0.895856, or 89.59 %
  
  
- ./darknet detector map data/logos.data cfg/yolov2-tiny-logos.cfg backup/yolov2-tiny-logos_15300.weights
+ ./darknet detector map cfg/logos.data cfg/yolov2-tiny-logos.cfg backup/yolov2-tiny-logos_15300.weights
 layer     filters    size              input                output
    0 conv     16  3 x 3 / 1   416 x 416 x   3   ->   416 x 416 x  16 0.150 BF
    1 max          2 x 2 / 2   416 x 416 x  16   ->   208 x 208 x  16 0.003 BF
@@ -740,7 +738,7 @@ class_id = 26, name = McDonalds, 	 ap = 90.91 %
 Total Detection Time: 18.000000 Seconds
 ````
 
-So, comparing all the 3 outputs, WE HAVE A WINNER ! As we can see above, the batch 11000 found more objects but got more of them wrong, while 15300 found less objects but is showing a better overall balance on indicators including the main ones: F1-score, mAP, Recall and IOU. We also can see that Apple is a tricky logo, when comparing to the performance of the other ones. 
+So, comparing all the 3 outputs, WE HAVE A WINNER! As we can see above, the batch 11000 found more objects but got more of them wrong, while 15300 found less objects but is showing a better overall balance on indicators including the main ones: F1-score, mAP, Recall and IOU. We can also see that Apple is a tricky logo, when comparing to the performance of the other ones. 
 
 ## Converting our Winner Model into Tensorflow with Darkflow
 
@@ -786,12 +784,12 @@ Total time = 21.416011333465576s / 256 inps = 11.953673166018708 ips
 .
 .
 ````
-Below some results from this run. It has missed some logos, specially Apple and Sprite, while found some blurred and hidden ones. Once Yolo focus is speed sometimes missing some detections is ok:    
+Below some results from this run. It has missed some logos, specially Apple and Sprite, while found some blurred and hidden ones. Once Yolo focus is speed, sometimes missing some detections is ok:    
 ![results darkflow](images/sample01.png)  
 
 High-res versions of these images can be seen in `inference_results`folder. 
 
-Once we have tested and checked that the model is workign as desired, we need to convert it first to Tensorflow to be able to move it to Raspberry Pi with Movidius. Let's run the command below and check the results under `~/darkflow/built_graph/`: 
+Once we have tested and checked that the model is working as desired, we need to convert it first to Tensorflow to be able to move it to Raspberry Pi with Movidius. Let's run the command below and check the results under `~/darkflow/built_graph/`: 
 
 ````
 python3 flow --model ../darknet/cfg/yolov2-tiny-logos.cfg --load ../darknet/backup/yolov2-tiny-logos_15300.weights 
@@ -838,7 +836,7 @@ drwxrwxr-x 12 ubuntu ubuntu     4096 Nov 17 20:27 ..
 -rw-rw-r--  1 ubuntu ubuntu     2151 Nov 19 17:36 yolov2-tiny-logos.meta
 -rw-rw-r--  1 ubuntu ubuntu 63624884 Nov 19 17:36 yolov2-tiny-logos.pb
 ````
-That is all we needed the EC2 instance for. Download those two files or copy them directly to Raspberry Pi and we resume from there. 
+That is all we needed the EC2 instance for. Download those two files or copy them directly to Raspberry Pi and we will resume from there. 
 
 If you want to save some money, that would be a good time to shutdown your instance. 
 
