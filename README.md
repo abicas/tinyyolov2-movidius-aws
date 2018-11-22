@@ -318,12 +318,12 @@ cp ~/flickr27/flickr_logos_27_dataset/tmp/*  ~/darknet/data/logos/
 ls data/logos/*jpg | grep -v 6_ > ~/darknet/data/train.txt
 ls data/logos/*jpg | grep  6_ > ~/darknet/data/test.txt
 cp ~/flickr27/flickr_logos_27_dataset/labels.txt ~/darknet/data/logos.txt
-cp cfg/voc.data cfg/logos.data
+cp cfg/voc.data data/logos.data
 cp cfg/yolov2-tiny-voc.cfg cfg/yolov2-tiny-logos.cfg
 ````
 We copied our training data from `tmp/`structure to the `darknet/data/logos/`, generated a list os images for training and another one for testing and copied the file `.data` and template networking for Yolo V2 Tiny `.cfg` so we can adjust them. 
 
-Now, edit the file `cfg/logos.data` to: 
+Now, edit the file `data/logos.data` to: 
 ````bash
 classes= 27
 train  = data/train.txt
@@ -393,7 +393,7 @@ Saving weights to yolov2-tiny-logos.conv.13
 Ok! Finally! Now the real fun begins (and, for some anxious people like me the worst part, that is watching the training go on and on for a couple of hours hoping for the algorithms to improve at each interation)! 
 
 ````bash
-./darknet detector train cfg/logos.data cfg/yolov2-tiny-logos.cfg yolov2-tiny-logos.conv.13
+./darknet detector train data/logos.data cfg/yolov2-tiny-logos.cfg yolov2-tiny-logos.conv.13
 yolov2-tiny-logos
 layer     filters    size              input                output
    0 conv     16  3 x 3 / 1   416 x 416 x   3   ->   416 x 416 x  16 0.150 BF
@@ -563,7 +563,7 @@ backup = backup
 
 And now we run darknet against all the images using three weights we selected from all of the ones generated: 
 ````bash
-./darknet detector map cfg/logos.data cfg/yolov2-tiny-logos.cfg backup/yolov2-tiny-logos_11000.weights
+./darknet detector map data/logos.data cfg/yolov2-tiny-logos.cfg backup/yolov2-tiny-logos_11000.weights
 layer     filters    size              input                output
    0 conv     16  3 x 3 / 1   416 x 416 x   3   ->   416 x 416 x  16 0.150 BF
    1 max          2 x 2 / 2   416 x 416 x  16   ->   208 x 208 x  16 0.003 BF
@@ -621,7 +621,7 @@ class_id = 26, name = McDonalds, 	 ap = 90.00 %
  mean average precision (mAP) = 0.883629, or 88.36 %
 Total Detection Time: 18.000000 Seconds
 
-./darknet detector map cfg/logos.data cfg/yolov2-tiny-logos.cfg backup/yolov2-tiny-logos_15000.weights
+./darknet detector map data/logos.data cfg/yolov2-tiny-logos.cfg backup/yolov2-tiny-logos_15000.weights
 layer     filters    size              input                output
    0 conv     16  3 x 3 / 1   416 x 416 x   3   ->   416 x 416 x  16 0.150 BF
    1 max          2 x 2 / 2   416 x 416 x  16   ->   208 x 208 x  16 0.003 BF
@@ -679,7 +679,7 @@ class_id = 26, name = McDonalds, 	 ap = 88.18 %
  mean average precision (mAP) = 0.895856, or 89.59 %
  
  
- ./darknet detector map cfg/logos.data cfg/yolov2-tiny-logos.cfg backup/yolov2-tiny-logos_15300.weights
+ ./darknet detector map data/logos.data cfg/yolov2-tiny-logos.cfg backup/yolov2-tiny-logos_15300.weights
 layer     filters    size              input                output
    0 conv     16  3 x 3 / 1   416 x 416 x   3   ->   416 x 416 x  16 0.150 BF
    1 max          2 x 2 / 2   416 x 416 x  16   ->   208 x 208 x  16 0.003 BF
