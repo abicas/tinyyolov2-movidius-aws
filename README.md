@@ -47,9 +47,9 @@ The idea behind this project is to allow for low cost devices to perform near re
 
 * Raspberry Pi 3B+ 
 * 16GB card 
-* Raspbian 
+* Raspbian 2018-11-13 
 * USB Webcam 
-* [Movidius USB Stick](https://www.movidius.com/) for accelerated inferences
+* [Intel Movidius USB Stick](https://www.movidius.com/) for accelerated inferences
 
 ## Setting things up for Training
 
@@ -838,9 +838,64 @@ drwxrwxr-x 12 ubuntu ubuntu     4096 Nov 17 20:27 ..
 ````
 That is all we needed the EC2 instance for. Download those two files or copy them directly to Raspberry Pi and we will resume from there. 
 
-If you want to save some money, that would be a good time to shutdown your instance. 
+**If you want to save some money, that would be a good time to shutdown your instance. ** 
 
 **In case you need to skip some steps, I will include most of the generated files in the `support` folder** 
 
-## 
+## Raspberry Pi Setup 
+
+Let's move to the Raspberry setup. I will assume you have downloaded and imaged the memory card and has configured networking for the Pi.
+
+First things first, let's update everything making sure we have the latest versions and setup swap file for compiling the Movidius SDK later on: 
+````bash
+sudo apt update
+sudo apt upgrade
+## Increase SWAP to 2GB
+sudo vi  /etc/dphys-swapfile
+## change line from CONF_SWAPSIZE=100 to CONF_SWAPSIZE=2000
+## Restart swap
+sudo /etc/init.d/dphys-swapfile restart
+
+## REQUIREMENTS 
+pip3 install opencv-python numpy boto3 pillow matplotlib
+sudo apt-get install libatlas-base-dev
+sudo apt-get install libjasper-dev
+sudo apt-get install libqtgui4 libqt4-test libqtcore4
+sudo apt-get install python3-pyqt5
+
+````
+
+Then let's install the Movidius SDK. Intel has updated its documentation including V2 os the SDK which is not backward compatible to the ones we use here. If you follow Intel guides, make sure to note that we will be using V1 and not V2. 
+
+````bash
+git clone http://github.com/Movidius/ncsdk && cd ncsdk && make install
+.
+.
+.
+
+Successfully installed mvnc-1.12.1.1
+NCS Libraries have been installed in /usr/local/lib
+NCS Toolkit binaries have been installed in /usr/local/bin
+NCS Include files have been installed in /usr/local/include
+NCS Python API has been installed in /opt/movidius, and PYTHONPATH environment variable updated
+Updating udev rules...
+Adding user 'pi' to 'users' group
+Setup is complete.
+The PYTHONPATH enviroment variable was added to your .bashrc as described in the Caffe documentation.
+Keep in mind that only newly spawned terminals can see this variable!
+This means that you need to open a new terminal in order to be able to use the NCSDK.
+````
+This script will download all the requirements, compile everything and set things up. It make take up to one hour on new devices for everything to run, so grab a cup of coffee and just watch the logs roll up the terminal. 
+
+Later on, if you want to play around with other networks and see more examples of Movidius acelerated code, you can check [Movidius Neural Compute Application Zoo (NC App Zoo)](https://github.com/movidius/ncappzoo), clone it and play around in your device. 
+
+-- CONVERT MODEL
+-- CLONE REPO (MINIFY CODE)
+-- CODE DEMO
+-- RUN ! 
+-- CODE AWS KINESIS
+
+
+
+
 
