@@ -885,7 +885,7 @@ The PYTHONPATH enviroment variable was added to your .bashrc as described in the
 Keep in mind that only newly spawned terminals can see this variable!
 This means that you need to open a new terminal in order to be able to use the NCSDK.
 ````
-This script will download all the requirements, compile everything and set things up. It make take up to one hour on new devices for everything to run, so grab a cup of coffee and just watch the logs roll up the terminal. 
+This script will download all the requirements, compile everything and set things up. It may take up to one hour on new devices for everything to run, so grab a cup of coffee and just watch the logs roll up the terminal. 
 
 Later on, if you want to play around with other networks and see more examples of Movidius acelerated code, you can check [Movidius Neural Compute Application Zoo (NC App Zoo)](https://github.com/movidius/ncappzoo), clone it and play around in your device. 
 
